@@ -120,3 +120,18 @@ model RankHistory {
   score             Float
   createdAt         DateTime  @default(now())
 }
+
+model KPILog {
+  id                String    @id @default(uuid())
+  totalTransactions Int       @default(0)
+  avgQuality        Float     @default(0.0)
+  totalAmount       Float     @default(0.0)
+  timestamp         DateTime  @default(now())
+}
+
+model SkillMaster {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  category    String
+  createdAt   DateTime @default(now())
+}
