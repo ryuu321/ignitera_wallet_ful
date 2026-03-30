@@ -285,33 +285,41 @@ export default function ProfilePage() {
             <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                     <History color="rgba(255,255,255,0.5)" />
-                    <h3 style={{ fontSize: '1.1rem' }}>Personal Mission Ledger</h3>
+                    <h3 style={{ fontSize: '1.1rem' }}>Personal Mission Ledger <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginLeft: '10px' }}>Algorithm S Metrics</span></h3>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
                         <th style={{ padding: '12px' }}>Timestamp</th>
-                        <th style={{ padding: '12px' }}>Task Type</th>
                         <th style={{ padding: '12px' }}>Role (Pc)</th>
+                        <th style={{ padding: '12px' }}>Uniqueness (Wu)</th>
+                        <th style={{ padding: '12px' }}>Eff. Bonus (Eb)</th>
                         <th style={{ padding: '12px' }}>Quality (Q)</th>
-                        <th style={{ padding: '12px' }}>Score (S)</th>
-                        <th style={{ padding: '12px' }}>Net ₲</th>
+                        <th style={{ padding: '12px' }}>Distribution (Wd)</th>
+                        <th style={{ padding: '12px' }}>Collusion (Ac)</th>
+                        <th style={{ padding: '12px', color: 'white' }}>Score (S)</th>
+                        <th style={{ padding: '12px' }}>Reward</th>
                       </tr>
                     </thead>
                     <tbody>
                       {history.map((tx) => (
                         <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.85rem' }}>
-                          <td style={{ padding: '12px' }}>{new Date(tx.timestamp).toLocaleDateString()}</td>
-                          <td style={{ padding: '12px' }}>Software Engineering</td>
-                          <td style={{ padding: '12px' }}>x{tx.pc?.toFixed(1) || '1.0'}</td>
-                          <td style={{ padding: '12px' }}>x{tx.q?.toFixed(1) || '1.0'}</td>
-                          <td style={{ padding: '12px', fontWeight: 'bold' }}>{tx.finalScore?.toFixed(1) || '0.0'}</td>
-                          <td style={{ padding: '12px', color: 'var(--success)' }}>+{tx.amount} ₲</td>
+                          <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>{new Date(tx.timestamp).toLocaleDateString()}</td>
+                          <td style={{ padding: '12px' }}>x{tx.pc?.toFixed(2) || '1.0'}</td>
+                          <td style={{ padding: '12px', color: 'var(--primary)' }}>x{tx.wu?.toFixed(2) || '1.0'}</td>
+                          <td style={{ padding: '12px', color: (tx.eb || 0) >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                            { (tx.eb || 0) >= 0 ? '+' : '' }{(tx.eb || 0).toFixed(2)}
+                          </td>
+                          <td style={{ padding: '12px' }}>x{tx.q?.toFixed(2) || '1.0'}</td>
+                          <td style={{ padding: '12px', opacity: 0.6 }}>{tx.wd?.toFixed(2) || '1.0'}</td>
+                          <td style={{ padding: '12px', color: (tx.ac || 1) < 1 ? 'var(--accent)' : 'inherit' }}>{tx.ac?.toFixed(2) || '1.0'}</td>
+                          <td style={{ padding: '12px', fontWeight: 'bold', color: 'white' }}>{tx.finalScore?.toFixed(1) || '0.0'}</td>
+                          <td style={{ padding: '12px', color: 'var(--success)', whiteSpace: 'nowrap' }}>+{tx.amount} ₲</td>
                         </tr>
                       ))}
                       {history.length === 0 && (
-                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.2)' }}>No personal records found.</td></tr>
+                        <tr><td colSpan={9} style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.2)' }}>No personal records found.</td></tr>
                       )}
                     </tbody>
                   </table>
