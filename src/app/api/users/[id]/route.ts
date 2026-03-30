@@ -1,22 +1,27 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+const prisma = new PrismaClient();
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await params;
     const body = await req.json();
+    const { skills, skillLevel } = body;
     
-    // Only allow updating skills and realName for now
-    const updatedUser = await prisma.user.update({
-      where: { id },
+    const user = await prisma.user.update({
+      where: { id: params.id },
       data: {
-        ...(body.skills && { skills: body.skills }),
-        ...(body.realName && { realName: body.realName }),
+        ...(skills !== undefined && { skills }),
+        ...(skillLevel !== undefined && { skillLevel: parseFloat(skillLevel) }),
       }
     });
 
-    return NextResponse.json(updatedUser);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+    return NextResponse.json(user);
+  } catch (err: any) {
+    console.error('PATCH USER ERROR:', err);
+    return NextResponse.json({ error: 'Failed to update neural profile.' }, { status: 500 });
   }
 }
