@@ -15,8 +15,8 @@ export async function GET() {
     const circulation = weeklyTransactions.reduce((acc: number, t: any) => acc + t.amount, 0);
     
     // Score Tier Distribution
-    const users = await prisma.user.findMany({ select: { evaluationScore: true } });
-    const scores = users.map((u: any) => u.evaluationScore);
+    const users = await prisma.user.findMany({ select: { totalScore: true } });
+    const scores = users.map((u: any) => u.totalScore);
     const sTier = scores.filter((s: number) => s >= 90).length;
     const aTier = scores.filter((s: number) => s >= 80 && s < 90).length;
     const bTier = scores.filter((s: number) => s >= 70 && s < 80).length;
@@ -35,7 +35,7 @@ export async function GET() {
     // Aggregates for Radar/Summary Chart
     const avgStats = await prisma.transaction.aggregate({
       _avg: {
-        ac: true, wu: true, wd: true, aa: true, df: true, sf: true, eb: true, rf: true, q: true
+        ac: true, wu: true, wd: true, aa: true, df: true, sf: true, eb: true, rr: true, q: true, pc: true
       }
     });
 
@@ -60,7 +60,8 @@ export async function GET() {
         df: avgStats._avg.df || 1.0,
         sf: avgStats._avg.sf || 1.0,
         eb: avgStats._avg.eb || 1.0,
-        rf: avgStats._avg.rf || 1.0,
+        rr: avgStats._avg.rr || 1.0,
+        pc: avgStats._avg.pc || 1.0,
         q: avgStats._avg.q || 1.0,
       },
       qualityDistribution: [sTier, aTier, bTier, cTier],
