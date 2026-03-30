@@ -68,11 +68,11 @@ model Bid {
   id          String   @id @default(uuid())
   taskId      String
   task        Task     @relation(fields: [taskId], references: [id])
-  bidderId    String   // RENAMED for legacy Compatibility
+  bidderId    String
   bidder      User     @relation(fields: [bidderId], references: [id])
   amount      Float
   message     String   @default("")
-  status      String   @default("PENDING") // RESTORED for legacy Compatibility
+  status      String   @default("PENDING")
   createdAt   DateTime @default(now())
 }
 
@@ -95,6 +95,7 @@ model Transaction {
   toUserId          String
   toUser            User      @relation("ToUser", fields: [toUserId], references: [id])
   
+  type              String    @default("PAYMENT") // RESTORED for legacy Compatibility
   amount            Float
   finalScore        Float
 
