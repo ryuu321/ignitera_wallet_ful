@@ -1,17 +1,65 @@
 /**
- * Ignitera Algorithm: S = C * Wu * Wd * Pc * Q * Ac
- * Range Aligned Version
+ * Ignitera Algorithm S: Advanced Behavioral Evaluation Engine
+ * 
+ * Formal Specification Revision: 2026-03-30
+ * 
+ * Evaluation Structure:
+ * S = (Reward Factors) * (Control Factors)
+ * 
+ * Reward Factors (加点): C, Q, Aa, Rc, Wu, Pc, Eb
+ * Control Factors (減点): Wd, Ac
  */
 
 export interface EvaluationInput {
-  coinAmount: number;      // C: 100 - 1000
-  skillUniqueness: number;  // Wu: 1.0 - 2.0
-  networkDispersion: number; // Wd: 0.5 - 1.0
-  roleMultiplier: number;   // Pc: 1.0 - 1.2
-  qualityRating: number;    // Q: 0.0 - 1.0
-  collusionFactor: number;  // Ac: 0.0 - 1.0
+  // Reward Factors
+  coinAmount: number;      // C
+  qualityRating: number;    // Q (0.0 - 1.0)
+  activityRate: number;     // Aa (Default 1.0)
+  rankMultiplier: number;   // Rc (Default 1.0)
+  skillUniqueness: number;  // Wu (1.0 - 1.5)
+  roleMultiplier: number;   // Pc (1.0 - 1.2)
+  efficiencyBonus: number;  // Eb (-0.1 - 0.2)
+  
+  // Control Factors
+  distributionRate: number; // Wd (0.7 - 1.0)
+  antiCollusion: number;    // Ac (0.5 - 1.0)
 }
 
+/**
+ * Calculates the final score S based on the separated factor layers.
+ */
+export function calculateFinalScore(input: EvaluationInput): number {
+  const { 
+    coinAmount, 
+    qualityRating, 
+    activityRate, 
+    rankMultiplier, 
+    skillUniqueness, 
+    roleMultiplier, 
+    efficiencyBonus,
+    distributionRate,
+    antiCollusion
+  } = input;
+
+  // Layer 1: Reward Base
+  const rewardFactors = 
+    coinAmount * 
+    qualityRating * 
+    activityRate * 
+    rankMultiplier * 
+    skillUniqueness * 
+    roleMultiplier * 
+    (1 + efficiencyBonus);
+
+  // Layer 2: Control Adjustments
+  const finalScore = rewardFactors * distributionRate * antiCollusion;
+
+  return finalScore;
+}
+
+/**
+ * Pc (Position Multiplier)
+ */
 export function calculatePc(position: string): number {
   switch (position) {
     case 'MANAGER': return 1.2;
@@ -23,98 +71,74 @@ export function calculatePc(position: string): number {
 }
 
 /**
- * Calculates the final stock coin score (S).
+ * Wu (Skill Uniqueness)
+ * Wu = 1 + 0.5 * (1 - percentile(frequency_30d))
+ * Range: 1.0 - 1.5
  */
-export function calculateFinalScore(input: EvaluationInput): number {
-  const { 
-    coinAmount, 
-    skillUniqueness, 
-    networkDispersion, 
-    roleMultiplier, 
-    qualityRating, 
-    collusionFactor 
-  } = input;
-
-  return (
-    coinAmount * 
-    skillUniqueness * 
-    networkDispersion * 
-    roleMultiplier * 
-    qualityRating * 
-    collusionFactor
-  );
+export function determineWu(taskFrequency: number, allTaskFrequencies: number[]): number {
+  if (allTaskFrequencies.length === 0) return 1.0;
+  
+  const sorted = [...allTaskFrequencies].sort((a, b) => a - b);
+  // Find rank (lowest frequency is most unique)
+  // Percentile of the frequency value t in the distribution
+  const rank = sorted.indexOf(taskFrequency);
+  const percentile = rank / sorted.length;
+  
+  // Rare skills (low frequency) get higher Wu
+  const Wu = 1 + 0.5 * (1 - percentile);
+  return Wu;
 }
 
 /**
- * Skill Uniqueness (Wu): 1.0 - 2.0
- * Based on rarity of the skill in the overall ecosystem.
+ * Wd (Distribution Rate)
+ * r_d = max(n_j / N) (Max reliance ratio on a single requester)
+ * Wd = 1 - 0.3 * r_d
+ * Range: 0.7 - 1.0
  */
-export function determineWu(userSkills: string[], allUserSkills: string[]): number {
-  if (allUserSkills.length === 0 || userSkills.length === 0) return 1.0;
+export function determineWd(registrations: { requesterId: string }[]): number {
+  if (registrations.length === 0) return 1.0;
   
-  const skillOccurrences: { [key: string]: number } = {};
-  allUserSkills.forEach(s => skillOccurrences[s] = (skillOccurrences[s] || 0) + 1);
-  
-  const totalUsersWithSkills = allUserSkills.length;
-  
-  const uniquenessScores = userSkills.map(skill => {
-    const freq = (skillOccurrences[skill] || 1) / totalUsersWithSkills;
-    // Scale to reach 2.0 max for very rare skills
-    return 1 + (1 - Math.pow(freq, 0.5)); 
+  const counts: Record<string, number> = {};
+  registrations.forEach(r => {
+    counts[r.requesterId] = (counts[r.requesterId] || 0) + 1;
   });
   
-  return Math.min(2.0, Math.max(...uniquenessScores));
+  const maxCount = Math.max(...Object.values(counts));
+  const rd = maxCount / registrations.length;
+  
+  const Wd = 1 - 0.3 * rd;
+  return Wd;
 }
 
 /**
- * Network Dispersion (Wd): 0.5 - 1.0
- * Higher if the user works with more variety of people.
+ * Ac (Anti-Collusion Factor)
+ * F = 0.4r + 0.4c + 0.2p
+ * f < 0.3 -> 1.0, f < 0.6 -> 0.8, else -> 0.5
  */
-export function determineWd(userId: string, history: { fromId: string, toId: string }[]): number {
-  if (history.length === 0) return 1.0; // Start with healthy score or 0.5? User said increases on dispersion.
+export function determineAc(metrics: {
+  recurrence: number;      // r = transactions with this partner / total
+  closedLoop: number;      // c = mutual transactions / total
+  priceAnomaly: number;    // p = |reward - median| / median
+}): number {
+  const { recurrence, closedLoop, priceAnomaly } = metrics;
   
-  const connections = new Set<string>();
-  let userTransactionsCount = 0;
+  const F = 0.4 * recurrence + 0.4 * closedLoop + 0.2 * priceAnomaly;
   
-  history.forEach(t => {
-    if (t.fromId === userId) {
-      connections.add(t.toId);
-      userTransactionsCount++;
-    } else if (t.toId === userId) {
-      connections.add(t.fromId);
-      userTransactionsCount++;
-    }
-  });
-
-  if (userTransactionsCount === 0) return 1.0;
-  
-  // Ratio of unique collaborators to total transactions
-  const ratio = Math.min(1.0, connections.size / (userTransactionsCount || 1));
-  
-  // Range: 0.5 (low dispersion) to 1.0 (high dispersion)
-  return 0.5 + (ratio * 0.5);
+  if (F < 0.3) return 1.0;
+  if (F < 0.6) return 0.8;
+  return 0.5;
 }
 
 /**
- * Anti-Collusion Factor (Ac): 0.0 - 1.0
- * Drops to 0 if heavy collusion is detected.
+ * Eb (Efficiency Bonus)
+ * Eb = clamp(-0.1, 0.5 * (hexp/hact - 1), 0.2)
  */
-export function determineAc(fromUserId: string, toUserId: string, history: { fromId: string, toId: string }[]): number {
-  const userHistory = history.filter(t => t.fromId === fromUserId || t.toId === fromUserId);
-  const totalTransactions = userHistory.length || 1;
+export function determineEb(expectedHours: number, actualHours: number): number {
+  if (actualHours <= 0) return 0.2; // Exceptional speed
   
-  const pairTransactions = userHistory.filter(t => 
-    (t.fromId === fromUserId && t.toId === toUserId) || 
-    (t.fromId === toUserId && t.toId === fromUserId)
-  ).length;
-
-  const ratio = pairTransactions / totalTransactions;
-
-  // If more than 30% of total history is with this single person, penalize heavily
-  if (ratio > 0.3) {
-    const penalty = (ratio - 0.3) * 2;
-    return Math.max(0.0, 1.0 - penalty);
-  }
+  const ratio = (expectedHours / actualHours) - 1;
+  const rawEb = 0.5 * ratio;
   
-  return 1.0;
+  // Clamp between -0.1 and 0.2
+  return Math.min(0.2, Math.max(-0.1, rawEb));
 }

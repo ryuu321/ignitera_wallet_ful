@@ -2,16 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { 
   calculateFinalScore, 
-  determineWu, 
+  calculatePc,
+  determineWu,
   determineAc,
   determineWd,
-  calculatePc
+  determineEb
 } from '@/lib/algorithm';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: taskId } = await params;
     const { qualityScore } = await req.json(); // Q (0.0 - 1.0)
+    const now = new Date();
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
@@ -21,7 +23,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     });
 
-    if (!task || !task.assignee || !task.assigneeId || !task.finalReward) {
+    if (!task || !task.assignee || !task.assigneeId) {
       return NextResponse.json({ error: 'Task not ready for completion' }, { status: 400 });
     }
 
@@ -29,76 +31,104 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json({ error: 'Task is already completed' }, { status: 400 });
     }
 
-    const C = task.finalReward;
-    const totalRequesterBalance = task.requester.balanceFlow + task.requester.balanceStock;
+    const C = task.baseReward; // Using baseReward for consistency
 
-    if (totalRequesterBalance < C) {
-        return NextResponse.json({ error: 'Insufficent total balance (Flow + Stock) to pay the reward' }, { status: 400 });
-    }
+    // --- NEW ALGORITHM S: DATA GATHERING ---
 
-    // --- ALGORITHM S CALCULATION ---
+    // 1. Efficiency Bonus (Eb)
+    const tAny = task as any;
+    const actualHours = (now.getTime() - task.updatedAt.getTime()) / (1000 * 3600);
+    const Eb = determineEb(tAny.expectedHours || 1.0, actualHours);
+
+    // 2. Skill Uniqueness (Wu: Percentile-based)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    // 1. Get all user skills for Wu calculation
-    const allUsers = await prisma.user.findMany({ select: { skills: true } });
-    const allSkills = allUsers.flatMap((u: any) => JSON.parse(u.skills));
-    const assigneeSkills = JSON.parse(task.assignee.skills);
-    
-    // 2. Get transaction history for Ac calculation
-    const history = await prisma.transaction.findMany({
-      select: { fromUserId: true, toUserId: true }
+    // Get all completed tasks in last 30d
+    const recentTasks = await prisma.task.findMany({
+      where: { status: 'COMPLETED', updatedAt: { gte: thirtyDaysAgo } },
+      select: { tags: true } as any
     });
-    const historyMapped = history.map((h: any) => ({ fromId: h.fromUserId, toId: h.toUserId }));
+    
+    const tagFreqs: Record<string, number> = {};
+    recentTasks.forEach(t => {
+      const tags = JSON.parse(t.tags || '[]');
+      tags.forEach((tag: string) => {
+        tagFreqs[tag] = (tagFreqs[tag] || 0) + 1;
+      });
+    });
 
-    // 3. Components
-    const Wu = determineWu(assigneeSkills, allSkills);
-    const Wd = determineWd(task.assigneeId, historyMapped); 
-    const Pc = calculatePc(task.position); 
+    const taskTags = JSON.parse(tAny.tags || '[]');
+    const currentTagFreq = Math.min(...taskTags.map((tag: string) => tagFreqs[tag] || 1));
+    const allFreqs = Object.values(tagFreqs);
+    if (allFreqs.length === 0) allFreqs.push(1);
+    
+    const Wu = determineWu(currentTagFreq, allFreqs);
+
+    // 3. Distribution (Wd: Individual reliance)
+    const assigneeHistory = await prisma.task.findMany({
+      where: { assigneeId: task.assigneeId, status: 'COMPLETED' },
+      select: { requesterId: true }
+    });
+    const Wd = determineWd(assigneeHistory);
+
+    // 4. Anti-Collusion (Ac: Fraud Score F)
+    const totalAssigneeTxs = await prisma.transaction.findMany({
+      where: { toUserId: task.assigneeId },
+      select: { fromUserId: true, amount: true }
+    });
+    
+    const partnerTxs = totalAssigneeTxs.filter(tx => tx.fromUserId === task.requesterId);
+    const r = totalAssigneeTxs.length > 0 ? partnerTxs.length / totalAssigneeTxs.length : 0;
+    
+    // Closed Loop (c)
+    const mutualTxs = await prisma.transaction.findMany({
+      where: { fromUserId: task.assigneeId, toUserId: task.requesterId }
+    });
+    const totalAllTxs = totalAssigneeTxs.length + (await prisma.transaction.count({ where: { fromUserId: task.assigneeId } }));
+    const c = totalAllTxs > 0 ? (partnerTxs.length + mutualTxs.length) / totalAllTxs : 0;
+
+    // Price Anomaly (p)
+    const allTxs = await prisma.transaction.findMany({ select: { amount: true }, take: 100 });
+    const amounts = allTxs.map(t => t.amount).sort((a,b) => a-b);
+    const median = amounts.length > 0 ? amounts[Math.floor(amounts.length / 2)] : C;
+    const p = Math.abs(C - median) / median;
+
+    const Ac = determineAc({ recurrence: r, closedLoop: c, priceAnomaly: p });
+
+    // 5. Standard Factors
     const Q = parseFloat(qualityScore);
-    const Ac = determineAc(task.requesterId, task.assigneeId, historyMapped);
+    const Pc = calculatePc(tAny.position);
+    const Aa = 1.0; // Activity Placeholder
+    const Rc = 1.0; // Rank Placeholder
 
-    // 0. Extract and Process Skills
-    const taskTags = JSON.parse(task.tags || '[]');
-    let currentSkills = [];
-    try {
-      currentSkills = JSON.parse(task.assignee?.skills || '[]');
-      if (!Array.isArray(currentSkills)) throw new Error();
-    } catch(e) {
-      if (task.assignee?.skills) {
-        currentSkills = task.assignee.skills.split(',').map((s: string) => ({ name: s.trim(), level: 'BRONZE' }));
-      }
-    }
+    // --- FINAL CALCULATION ---
+    const S = calculateFinalScore({
+        coinAmount: C,
+        qualityRating: Q,
+        activityRate: Aa,
+        rankMultiplier: Rc,
+        skillUniqueness: Wu,
+        roleMultiplier: Pc,
+        efficiencyBonus: Eb,
+        distributionRate: Wd,
+        antiCollusion: Ac
+    });
 
+    console.log(`[ALGORITHM S LOG] ID:${taskId} C:${C} Q:${Q} Wu:${Wu.toFixed(3)} Wd:${Wd.toFixed(3)} Ac:${Ac.toFixed(2)} Eb:${Eb.toFixed(2)} Score:${S.toFixed(2)}`);
+
+    // --- DATABASE UPDATES ---
+    // Skill Level Update (Same logic as before)
+    let currentSkills = JSON.parse(task.assignee.skills || '[]');
     const updatedSkills = [...currentSkills];
     taskTags.forEach((tag: string) => {
       const idx = updatedSkills.findIndex((s: any) => s.name === tag);
       if (idx > -1) {
-        if (updatedSkills[idx].level === 'GRAY') {
-          updatedSkills[idx].level = 'BRONZE';
-        }
+        if (updatedSkills[idx].level === 'GRAY') updatedSkills[idx].level = 'BRONZE';
       } else {
         updatedSkills.push({ name: tag, level: 'BRONZE' });
       }
     });
-
-    const S = calculateFinalScore({
-        coinAmount: C,
-        skillUniqueness: Wu,
-        networkDispersion: Wd,
-        roleMultiplier: Pc,
-        qualityRating: Q,
-        collusionFactor: Ac
-    });
-
-    // --- DATABASE UPDATES (ATOMIC TRANSACTION) ---
-    const flowBalance = task.requester.balanceFlow;
-    let flowDecrement = C;
-    let stockDecrement = 0;
-
-    // If Flow is insufficient, take from Stock
-    if (flowBalance < C) {
-      flowDecrement = flowBalance;
-      stockDecrement = C - flowBalance;
-    }
 
     await prisma.$transaction([
       prisma.transaction.create({
@@ -107,8 +137,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           fromUserId: task.requesterId,
           toUserId: task.assigneeId,
           amount: C, type: 'PAYMENT',
-          wu: Wu, wd: Wd, pc: Pc, q: Q, ac: Ac, finalScore: S
-        }
+          wu: Wu, wd: Wd, pc: Pc, q: Q, ac: Ac, eb: Eb, finalScore: S
+        } as any
       }),
       prisma.task.update({
         where: { id: taskId },
@@ -116,10 +146,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
       prisma.user.update({
         where: { id: task.requesterId },
-        data: { 
-          balanceFlow: { decrement: flowDecrement },
-          balanceStock: { decrement: stockDecrement }
-        }
+        data: { balanceFlow: { decrement: C } } // Simplified flow deduction
       }),
       prisma.user.update({
         where: { id: task.assigneeId },
@@ -131,8 +158,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       })
     ]);
 
-    return NextResponse.json({ finalScoreS: S });
+    return NextResponse.json({ finalScoreS: S, factors: { Wu, Wd, Ac, Eb, Pc, Q } });
   } catch (error: any) {
+    console.error(error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -30,7 +30,7 @@ export default function MarketplacePage() {
   const [showReviewModal, setShowReviewModal] = useState<any>(null); // task object
   const [showMessageModal, setShowMessageModal] = useState<any>(null); // task object
   
-  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [] as string[] });
+  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [] as string[], expectedHours: '1.0' });
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
   const [qualityScore, setQualityScore] = useState('0.9');
@@ -98,7 +98,7 @@ export default function MarketplacePage() {
         }),
       });
       setShowModal(false);
-      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [] });
+      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [], expectedHours: '1.0' });
       fetchData();
     } catch (err) { console.error(err); }
   };
@@ -432,6 +432,7 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, skillCategories }
         <FormField label="Task Title" value={newTask.title} onChange={(v:any) => setNewTask({...newTask, title: v})} />
         <FormField label="Description" value={newTask.description} onChange={(v:any) => setNewTask({...newTask, description: v})} type="textarea" />
         <FormField label="Base Reward (₲)" value={newTask.baseReward} onChange={(v:any) => setNewTask({...newTask, baseReward: v})} type="number" />
+        <FormField label="Expected Hours (h)" value={newTask.expectedHours} onChange={(v:any) => setNewTask({...newTask, expectedHours: v})} type="number" />
         <FormField 
           label="Mission Position" 
           value={newTask.position} 
