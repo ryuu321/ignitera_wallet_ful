@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const users = await prisma.user.findMany({
-      orderBy: { evaluationScore: 'desc' },
+      orderBy: { totalScore: 'desc' },
     });
     return NextResponse.json(users);
   } catch (error) {

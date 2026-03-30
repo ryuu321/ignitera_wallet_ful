@@ -19,6 +19,7 @@ model User {
   lastMonthScore    Float     @default(0.0)
   graceMonths       Int       @default(0)
   skillLevel        Float     @default(1.0)
+  skills            String    @default("[]") // RESTORED for project-specific skill tags
   
   balanceFlow       Float     @default(1000)
   balanceStock      Float     @default(0)
@@ -81,10 +82,10 @@ model TaskMessage {
   id          String   @id @default(uuid())
   taskId      String
   task        Task     @relation(fields: [taskId], references: [id])
-  userId      String   // RENAMED from senderId for legacy Comp
-  user        User     @relation(fields: [userId], references: [id]) // RENAMED from sender for legacy Comp
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
   content     String
-  createdAt   DateTime @default(now()) // RENAMED from timestamp for legacy Comp
+  createdAt   DateTime @default(now())
 }
 
 model Transaction {
