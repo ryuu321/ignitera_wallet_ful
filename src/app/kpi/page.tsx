@@ -15,7 +15,8 @@ import {
   LayoutDashboard,
   Settings,
   Briefcase,
-  User
+  User,
+  Calculator
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -96,8 +97,11 @@ export default function KPIPage() {
              <Link href="/" className={styles.navItem}><LayoutDashboard size={18} /> <span>Overview</span></Link>
              <Link href="/marketplace" className={styles.navItem}><Briefcase size={18} /> <span>Market</span></Link>
              <Link href="/kpi" className={clsx(styles.navItem, styles.navItemActive)}><BarChart3 size={18} /> <span>Analytics</span></Link>
-             <Link href="/profile" className={styles.navItem}><User size={18} /> <span>Profile</span></Link>
+             <Link href="/profile" className={styles.navItem}><User size={18} /> <span>Profile DNA</span></Link>
              <Link href="/settings" className={styles.navItem}><Settings size={18} /> <span>Settings</span></Link>
+             <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px' }}>
+                <Calculator size={18} color="#6366f1" /> <span style={{ opacity: 0.6 }}>Evaluation Docs</span>
+             </Link>
           </nav>
 
           <div style={{ padding: '20px' }}>

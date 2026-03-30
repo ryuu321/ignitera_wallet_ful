@@ -18,7 +18,8 @@ import {
   History,
   Plus,
   Award,
-  Crown
+  Crown,
+  Calculator
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from './page.module.css';
@@ -110,11 +111,15 @@ export default function DashboardPage() {
           </Link>
           <Link href="/profile" className={styles.navItem}>
             <User size={20} />
-            <span>Profile</span>
+            <span>Profile DNA</span>
           </Link>
           <Link href="/settings" className={styles.navItem}>
             <Settings size={20} />
             <span>Settings</span>
+          </Link>
+          <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px', opacity: 0.8 }}>
+            <Calculator size={20} color="#6366f1" />
+            <span style={{ fontSize: '0.85rem' }}>Evaluation Docs</span>
           </Link>
         </nav>
 

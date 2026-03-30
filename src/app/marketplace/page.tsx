@@ -265,9 +265,6 @@ export default function MarketplacePage() {
                 <Link href="/profile" className={styles.navItem}>
                   <User size={18} /> <span>Profile DNA</span>
                 </Link>
-                <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '5px', opacity: 0.7 }}>
-                  <Calculator size={18} color="var(--primary)" /> <span>Evaluation Docs</span>
-                </Link>
             </div>
 
             <div style={{ marginTop: '30px', padding: '0 10px' }}>
