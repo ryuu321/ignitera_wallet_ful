@@ -26,17 +26,24 @@ export async function GET() {
     const cTier = scores.filter((s: number) => s < 70).length;
 
     const recentTx = await prisma.transaction.findMany({
-      take: 20,
+      take: 30,
       orderBy: { timestamp: 'desc' },
-      include: { toUser: { select: { anonymousName: true, role: true } } }
+      include: { 
+        toUser: { select: { anonymousName: true } } as any,
+        fromUser: { select: { anonymousName: true } } as any 
+      }
     });
+
+    const avgAc = await (prisma.transaction.aggregate({ _avg: { ac: true } as any }) as any);
+    const avgWu = await (prisma.transaction.aggregate({ _avg: { wu: true } as any }) as any);
+    const avgEb = await (prisma.transaction.aggregate({ _avg: { eb: true } as any }) as any);
 
     // Grouping for "Volume by Role" Chart
     const roles = ['ADMIN', 'PLAYER', 'MANAGER', 'LEADER'];
     const roleVolume = await Promise.all(roles.map(async (role) => {
       const sum = await prisma.transaction.aggregate({
         _sum: { amount: true },
-        where: { toUser: { role: role } }
+        where: { toUser: { role: role } as any }
       });
       return sum._sum.amount || 0;
     }));
@@ -45,6 +52,9 @@ export async function GET() {
       circulationVolume: circulation,
       completionRate: taskCount > 0 ? (completedTasks / taskCount) * 100 : 0,
       dispersion: 0.84, 
+      avgAc: avgAc._avg.ac || 1.0,
+      avgWu: avgWu._avg.wu || 1.0,
+      avgEb: avgEb._avg.eb || 0.0,
       qualityDistribution: [sTier, aTier, bTier, cTier],
       weeklyCirculation: [120, 150, 130, 180, 200, 170, 210],
       roleLabels: roles,
