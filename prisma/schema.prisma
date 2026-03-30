@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  anonymousName     String    @unique
+  realName          String?   
+  role              String    @default("PLAYER")
+  skills            String    
+  balanceFlow       Float     @default(1000)
+  balanceStock      Float     @default(0)
+  evaluationScore   Float     @default(0)
+  tasksRequested    Task[]    @relation("RequestedBy")
+  tasksAssigned     Task[]    @relation("AssignedTo")
+  bids              Bid[]
+  transactionsSent  Transaction[] @relation("FromUser")
+  transactionsRecv  Transaction[] @relation("ToUser")
+  messages          TaskMessage[]
+  kpiLogs           KPILog[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Task {
+  id                String    @id @default(uuid())
+  title             String
+  description       String
+  requesterId       String
+  requester         User      @relation("RequestedBy", fields: [requesterId], references: [id])
+  assigneeId        String?
+  assignee          User?     @relation("AssignedTo", fields: [assigneeId], references: [id])
+  baseReward        Float     
+  finalReward       Float?    
+  status            String    @default("OPEN")
+  qualityScore      Float?
+  bids              Bid[]
+  messages          TaskMessage[]
+  transaction       Transaction?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Bid {
+  id                String    @id @default(uuid())
+  taskId            String
+  task              Task      @relation(fields: [taskId], references: [id])
+  bidderId          String
+  bidder            User      @relation(fields: [bidderId], references: [id])
+  amount            Float     
+  message           String?
+  status            String    @default("PENDING")
+  createdAt         DateTime  @default(now())
+}
+
+model TaskMessage {
+  id                String    @id @default(uuid())
+  taskId            String
+  task              Task      @relation(fields: [taskId], references: [id])
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  content           String
+  createdAt         DateTime  @default(now())
+}
+
+model Transaction {
+  id                String    @id @default(uuid())
+  taskId            String?   @unique
+  task              Task?     @relation(fields: [taskId], references: [id])
+  fromUserId        String
+  fromUser          User      @relation("FromUser", fields: [fromUserId], references: [id])
+  toUserId          String
+  toUser            User      @relation("ToUser", fields: [toUserId], references: [id])
+  amount            Float     
+  type              String    @default("PAYMENT") 
+  wu                Float     @default(1.0)
+  wd                Float     @default(1.0)
+  pc                Float     @default(1.0)
+  q                 Float     @default(1.0)
+  ac                Float     @default(1.0)
+  finalScore        Float     @default(0.0)
+  timestamp         DateTime  @default(now())
+}
+
+model KPILog {
+  id                String    @id @default(uuid())
+  userId            String?
+  user              User?     @relation(fields: [userId], references: [id])
+  metricName        String    
+  value             Float
+  timestamp         DateTime  @default(now())
+}
