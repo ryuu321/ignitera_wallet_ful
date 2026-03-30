@@ -189,32 +189,66 @@ export default function ProfilePage() {
                       + Add Self-Applied Skill (Gray)
                     </button>
                   ) : (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <select 
-                        value={newSkill}
-                        onChange={(e) => setNewSkill(e.target.value)}
-                        style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px', borderRadius: '8px', outline: 'none', fontSize: '0.8rem' }}
-                      >
-                        <option value="">Select a skill...</option>
-                        {MASTER_SKILLS.filter(s => !skills.some((ms: any) => ms.name === s)).map(s => (
-                          <option key={s} value={s} style={{ background: '#111' }}>{s}</option>
-                        ))}
-                      </select>
-                      <button 
-                        onClick={async () => {
-                          if (!newSkill) return;
-                          const updated = [...skills, { name: newSkill, level: 'GRAY' }];
-                          await fetch(`/api/users/${currentUser.id}`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ skills: JSON.stringify(updated) })
-                          });
-                          window.location.reload();
-                        }}
-                        style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}
-                      >
-                        Apply
-                      </button>
+                    <div style={{ position: 'relative' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input 
+                          type="text" 
+                          autoFocus
+                          value={newSkill}
+                          onChange={(e) => setNewSkill(e.target.value)}
+                          placeholder="Search skills (e.g. Next.js)..."
+                          style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px 14px', borderRadius: '8px', outline: 'none', fontSize: '0.85rem' }}
+                        />
+                        <button 
+                          onClick={() => { setShowSkillInput(false); setNewSkill(''); }}
+                          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.8rem' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+
+                      {newSkill && (
+                        <div className="glass-card" style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 10, maxHeight: '250px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', padding: '10px' }}>
+                          {MASTER_SKILLS
+                            .filter(s => s.toLowerCase().includes(newSkill.toLowerCase()) && !skills.some((ms: any) => (ms.name || ms) === s))
+                            .map(s => (
+                              <button
+                                key={s}
+                                onClick={async () => {
+                                  const updated = [...skills, { name: s, level: 'GRAY' }];
+                                  await fetch(`/api/users/${currentUser.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ skills: JSON.stringify(updated) })
+                                  });
+                                  window.location.reload();
+                                }}
+                                style={{
+                                  width: '100%',
+                                  padding: '10px',
+                                  textAlign: 'left',
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'white',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem',
+                                  transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                              >
+                                {s}
+                              </button>
+                            ))
+                          }
+                          {MASTER_SKILLS.filter(s => s.toLowerCase().includes(newSkill.toLowerCase())).length === 0 && (
+                            <div style={{ padding: '10px', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', textAlign: 'center' }}>
+                              No matching skills found in database.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

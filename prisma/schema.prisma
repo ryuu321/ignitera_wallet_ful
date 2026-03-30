@@ -97,3 +97,10 @@ model KPILog {
   value             Float
   timestamp         DateTime  @default(now())
 }
+
+model SkillMaster {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  category  String   @default("General")
+  createdAt DateTime @default(now())
+}

@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
-import { MASTER_SKILLS } from '@/lib/skills';
+import { MASTER_SKILLS, SKILL_CATEGORIES } from '@/lib/skills';
 
 export default function MarketplacePage() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -32,6 +32,7 @@ export default function MarketplacePage() {
   const [showMessageModal, setShowMessageModal] = useState<any>(null); // task object
   
   const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [] as string[] });
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
   const [qualityScore, setQualityScore] = useState('0.9');
   
@@ -158,9 +159,18 @@ export default function MarketplacePage() {
   };
 
   const filteredTasks = tasks.filter(t => {
-    if (view === 'my-issued') return t.requesterId === currentUser?.id;
-    if (view === 'my-bids') return t.bids?.some((b: any) => b.bidderId === currentUser?.id);
-    return t.status === 'OPEN' || t.status === 'BIDDING';
+    // 1. Role (View) Filter
+    if (view === 'my-issued' && t.requesterId !== currentUser?.id) return false;
+    if (view === 'my-bids' && !t.bids?.some((b: any) => b.bidderId === currentUser?.id)) return false;
+    if (view === 'browse' && t.status !== 'OPEN' && t.status !== 'BIDDING') return false;
+    
+    // 2. Skill Filter
+    if (selectedFilters.length > 0) {
+      const taskTags = JSON.parse(t.tags || '[]');
+      if (!selectedFilters.some(f => taskTags.includes(f))) return false;
+    }
+    
+    return true;
   });
 
   if (loading) {
@@ -209,6 +219,31 @@ export default function MarketplacePage() {
                 <Link href="/profile" className={styles.navItem}>
                   <User size={18} /> <span>Profile DNA</span>
                 </Link>
+            </div>
+
+            <div style={{ marginTop: '30px', padding: '0 10px' }}>
+              <h3 style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '15px', paddingLeft: '10px' }}>Skill Filter</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingLeft: '10px' }}>
+                {MASTER_SKILLS.slice(0, 10).map(s => (
+                  <button 
+                    key={s}
+                    onClick={() => {
+                      setSelectedFilters(prev => prev.includes(s) ? prev.filter(f => f !== s) : [...prev, s]);
+                    }}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '0.65rem',
+                      background: selectedFilters.includes(s) ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
+                      color: selectedFilters.includes(s) ? 'white' : 'rgba(255,255,255,0.4)',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
          </div>
 
@@ -396,13 +431,42 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
             { value: 'MANAGER', label: 'Manager / Project Owner (x1.2)' }
           ]} 
         />
-        <FormField 
-          label="Required Skill Tags" 
-          value={newTask.tags} 
-          onChange={(v:any) => setNewTask({...newTask, tags: v})} 
-          type="multi-select" 
-          options={MASTER_SKILLS.map(s => ({ value: s, label: s }))} 
-        />
+        <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '10px' }}>
+          {Object.entries(SKILL_CATEGORIES).map(([cat, skills]) => (
+            <div key={cat} style={{ marginBottom: '15px' }}>
+              <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', textTransform: 'uppercase' }}>{cat}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {skills.map(s => {
+                  const isSelected = newTask.tags.includes(s);
+                  return (
+                    <button 
+                      key={s} 
+                      type="button"
+                      onClick={() => {
+                        const next = isSelected 
+                          ? newTask.tags.filter(v => v !== s)
+                          : [...newTask.tags, s];
+                        setNewTask({ ...newTask, tags: next });
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '15px',
+                        fontSize: '0.7rem',
+                        border: '1px solid',
+                        borderColor: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                        background: isSelected ? 'rgba(99, 102, 241, 0.1)' : 'none',
+                        color: isSelected ? 'white' : 'rgba(255,255,255,0.4)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
         <div style={{ display: 'flex', gap: '12px', marginTop: '30px' }}>
           <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
           <button type="submit" className="neon-button" style={{ flex: 2 }}>Initialize Emission</button>
