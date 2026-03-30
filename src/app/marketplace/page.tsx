@@ -17,7 +17,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
-import { MASTER_SKILLS, SKILL_CATEGORIES } from '@/lib/skills';
 
 export default function MarketplacePage() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -38,6 +37,8 @@ export default function MarketplacePage() {
   
   const [taskMessages, setTaskMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [masterSkills, setMasterSkills] = useState<any[]>([]);
+  const [skillCategories, setSkillCategories] = useState<any>({});
 
   const fetchData = async () => {
     try {
@@ -53,6 +54,18 @@ export default function MarketplacePage() {
         const found = uData.find((u: any) => u.id === savedUserId);
         if (found) targetUser = found;
       }
+      // Fetch Master Skills
+      const sRes = await fetch('/api/skills');
+      const sData = await sRes.json();
+      setMasterSkills(sData);
+      
+      const categories: any = {};
+      sData.forEach((s: any) => {
+        if (!categories[s.category]) categories[s.category] = [];
+        categories[s.category].push(s.name);
+      });
+      setSkillCategories(categories);
+
       setCurrentUser(targetUser);
       setTasks(tData);
       setUsers(uData);
@@ -224,23 +237,23 @@ export default function MarketplacePage() {
             <div style={{ marginTop: '30px', padding: '0 10px' }}>
               <h3 style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '15px', paddingLeft: '10px' }}>Skill Filter</h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', paddingLeft: '10px' }}>
-                {MASTER_SKILLS.slice(0, 10).map(s => (
+                {masterSkills.slice(0, 12).map(s => (
                   <button 
-                    key={s}
+                    key={s.id}
                     onClick={() => {
-                      setSelectedFilters(prev => prev.includes(s) ? prev.filter(f => f !== s) : [...prev, s]);
+                      setSelectedFilters(prev => prev.includes(s.name) ? prev.filter(f => f !== s.name) : [...prev, s.name]);
                     }}
                     style={{
                       padding: '4px 8px',
                       borderRadius: '4px',
                       fontSize: '0.65rem',
-                      background: selectedFilters.includes(s) ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
-                      color: selectedFilters.includes(s) ? 'white' : 'rgba(255,255,255,0.4)',
+                      background: selectedFilters.includes(s.name) ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
+                      color: selectedFilters.includes(s.name) ? 'white' : 'rgba(255,255,255,0.4)',
                       border: 'none',
                       cursor: 'pointer'
                     }}
                   >
-                    {s}
+                    {s.name}
                   </button>
                 ))}
               </div>
@@ -432,11 +445,11 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
           ]} 
         />
         <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '10px' }}>
-          {Object.entries(SKILL_CATEGORIES).map(([cat, skills]) => (
+          {Object.entries(skillCategories).map(([cat, catskills]: any) => (
             <div key={cat} style={{ marginBottom: '15px' }}>
               <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', textTransform: 'uppercase' }}>{cat}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {skills.map(s => {
+                {catskills.map((s: string) => {
                   const isSelected = newTask.tags.includes(s);
                   return (
                     <button 
@@ -444,7 +457,7 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
                       type="button"
                       onClick={() => {
                         const next = isSelected 
-                          ? newTask.tags.filter(v => v !== s)
+                          ? newTask.tags.filter((v: string) => v !== s)
                           : [...newTask.tags, s];
                         setNewTask({ ...newTask, tags: next });
                       }}

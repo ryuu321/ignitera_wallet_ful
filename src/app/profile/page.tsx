@@ -16,7 +16,6 @@ import { motion } from 'framer-motion';
 import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
-import { MASTER_SKILLS } from '@/lib/skills';
 
 export default function ProfilePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -24,6 +23,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [newSkill, setNewSkill] = useState('');
   const [showSkillInput, setShowSkillInput] = useState(false);
+  const [masterSkills, setMasterSkills] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,9 +39,14 @@ export default function ProfilePage() {
         }
         
         // Fetch specific history for this user
-        const txRes = await fetch('/api/kpi'); // Reusing KPI for now, better to have /api/users/[id]/tx
+        const txRes = await fetch('/api/kpi'); 
         const kpiData = await txRes.json();
         const myTx = kpiData.transactions?.filter((tx: any) => tx.toUserId === user?.id) || [];
+        
+        // Fetch Master Skills
+        const sRes = await fetch('/api/skills');
+        const sData = await sRes.json();
+        setMasterSkills(sData);
         
         setCurrentUser(user);
         setHistory(myTx);
@@ -209,13 +214,13 @@ export default function ProfilePage() {
 
                       {newSkill && (
                         <div className="glass-card" style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 10, maxHeight: '250px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', padding: '10px' }}>
-                          {MASTER_SKILLS
-                            .filter(s => s.toLowerCase().includes(newSkill.toLowerCase()) && !skills.some((ms: any) => (ms.name || ms) === s))
+                          {masterSkills
+                            .filter(s => s.name.toLowerCase().includes(newSkill.toLowerCase()) && !skills.some((ms: any) => (ms.name || ms) === s.name))
                             .map(s => (
                               <button
-                                key={s}
+                                key={s.id}
                                 onClick={async () => {
-                                  const updated = [...skills, { name: s, level: 'GRAY' }];
+                                  const updated = [...skills, { name: s.name, level: 'GRAY' }];
                                   await fetch(`/api/users/${currentUser.id}`, {
                                     method: 'PATCH',
                                     headers: { 'Content-Type': 'application/json' },
@@ -238,14 +243,36 @@ export default function ProfilePage() {
                                 onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                               >
-                                {s}
+                                {s.name} <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginLeft: '10px' }}>{s.category}</span>
                               </button>
                             ))
                           }
-                          {MASTER_SKILLS.filter(s => s.toLowerCase().includes(newSkill.toLowerCase())).length === 0 && (
-                            <div style={{ padding: '10px', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', textAlign: 'center' }}>
-                              No matching skills found in database.
-                            </div>
+                          {masterSkills.filter(s => s.name.toLowerCase().includes(newSkill.toLowerCase())).length === 0 && (
+                            <button 
+                              onClick={async () => {
+                                // 1. Create globally
+                                const res = await fetch('/api/skills', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ name: newSkill, category: 'General' })
+                                });
+                                const createdSkill = await res.json();
+                                
+                                // 2. Add to profile
+                                if (createdSkill.name) {
+                                  const updated = [...skills, { name: createdSkill.name, level: 'GRAY' }];
+                                  await fetch(`/api/users/${currentUser.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ skills: JSON.stringify(updated) })
+                                  });
+                                  window.location.reload();
+                                }
+                              }}
+                              style={{ width: '100%', padding: '12px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', border: '1px dashed rgba(16, 185, 129, 0.3)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}
+                            >
+                              + Create & Add New Skill: "{newSkill}"
+                            </button>
                           )}
                         </div>
                       )}
