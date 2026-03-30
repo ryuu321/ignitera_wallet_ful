@@ -12,6 +12,8 @@ model User {
   anonymousName     String    @unique
   realName          String?   
   role              String    @default("PLAYER")
+  rank              String    @default("E")      // E, D, C, B, A, S
+  skillLevel        Float     @default(1.0)
   skills            String    
   balanceFlow       Float     @default(1000)
   balanceStock      Float     @default(0)
@@ -39,8 +41,15 @@ model Task {
   finalReward       Float?    
   status            String    @default("OPEN")
   position          String    @default("GENERAL") // MANAGER, SUB_MANAGER, SPECIALIST, GENERAL
-  tags              String    @default("[]") // JSON string of tags like ["Next.js", "Design"]
+  tags              String    @default("[]") // JSON string of tags
   expectedHours     Float     @default(1.0)
+  
+  // Complexity Factors (#11)
+  requiredSkill     Float     @default(1.0)    // s_req
+  outputs           Int       @default(1)      // n_o
+  branches          Int       @default(0)      // n_b
+  skillCount        Int       @default(1)      // n_s
+  externalCount     Int       @default(0)      // n_e
   qualityScore      Float?
   bids              Bid[]
   messages          TaskMessage[]
@@ -79,15 +88,26 @@ model Transaction {
   fromUser          User      @relation("FromUser", fields: [fromUserId], references: [id])
   toUserId          String
   toUser            User      @relation("ToUser", fields: [toUserId], references: [id])
-  amount            Float     
+  amount            Float               // Base Coin (C)
   type              String    @default("PAYMENT") 
+  
+  // Reward Factors
   wu                Float     @default(1.0)
   wd                Float     @default(1.0)
   pc                Float     @default(1.0)
   q                 Float     @default(1.0)
-  ac                Float     @default(1.0)
+  aa                Float     @default(1.0)
+  rc                Float     @default(1.0)
   eb                Float     @default(0.0)
-  finalScore        Float     @default(0.0)
+  ac                Float     @default(1.0)
+  
+  // Execution Data (#12)
+  actualHours       Float     @default(1.0)
+  rating            Float     @default(1.0)
+  difficulty        Float     @default(1.0)    // D
+  redistributionCost Float    @default(0.0)
+  
+  finalScore        Float     @default(0.0)    // S
   timestamp         DateTime  @default(now())
 }
 

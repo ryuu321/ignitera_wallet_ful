@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { calculateFinalScore } from '@/lib/algorithm';
 
 export async function GET() {
   try {
@@ -21,7 +20,10 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    const { title, description, requesterId, baseReward, position, tags, expectedHours } = data;
+    const { 
+      title, description, requesterId, baseReward, position, tags, expectedHours,
+      requiredSkill, outputs, branches, skillCount, externalCount
+    } = data;
 
     const task = await prisma.task.create({
       data: {
@@ -32,6 +34,11 @@ export async function POST(req: Request) {
         position: position || 'GENERAL',
         tags: JSON.stringify(tags || []),
         expectedHours: parseFloat(expectedHours || '1.0'),
+        requiredSkill: parseFloat(requiredSkill || '1.0'),
+        outputs: parseInt(outputs || '1'),
+        branches: parseInt(branches || '0'),
+        skillCount: parseInt(skillCount || '1'),
+        externalCount: parseInt(externalCount || '0'),
       } as any,
     });
 

@@ -38,7 +38,12 @@ export default function MarketplacePage() {
     position: 'GENERAL', 
     tags: [] as string[], 
     expectedValue: '1',
-    expectedUnit: 'h' 
+    expectedUnit: 'h',
+    requiredSkill: '1.0',
+    outputs: '1',
+    branches: '0',
+    skillCount: '1',
+    externalCount: '0'
   });
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
@@ -102,7 +107,12 @@ export default function MarketplacePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           ...newTask, 
-          expectedHours: parseFloat(newTask.expectedValue || '0'), // No multiplier as per request
+          expectedHours: parseFloat(newTask.expectedValue || '0'), 
+          requiredSkill: parseFloat(newTask.requiredSkill),
+          outputs: parseInt(newTask.outputs),
+          branches: parseInt(newTask.branches),
+          skillCount: parseInt(newTask.skillCount),
+          externalCount: parseInt(newTask.externalCount),
           requesterId: currentUser.id,
           tags: newTask.tags
         }),
@@ -115,7 +125,12 @@ export default function MarketplacePage() {
         position: 'GENERAL', 
         tags: [], 
         expectedValue: '1',
-        expectedUnit: 'h' 
+        expectedUnit: 'h',
+        requiredSkill: '1.0',
+        outputs: '1',
+        branches: '0',
+        skillCount: '1',
+        externalCount: '0'
       });
       fetchData();
     } catch (err) { console.error(err); }
@@ -473,6 +488,17 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, skillCategories }
               <option value="w">Weeks (週)</option>
               <option value="m">Months (月)</option>
             </select>
+          </div>
+        </div>
+
+        <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+          <h4 style={{ fontSize: '0.7rem', color: 'var(--primary)', marginBottom: '15px', textTransform: 'uppercase' }}>Complexity Matrix (D-Factor)</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <FormField label="Outputs (n_o)" value={newTask.outputs} onChange={(v:any) => setNewTask({...newTask, outputs: v})} type="number" />
+            <FormField label="Branches (n_b)" value={newTask.branches} onChange={(v:any) => setNewTask({...newTask, branches: v})} type="number" />
+            <FormField label="Skill Count (n_s)" value={newTask.skillCount} onChange={(v:any) => setNewTask({...newTask, skillCount: v})} type="number" />
+            <FormField label="External Dependencies (n_e)" value={newTask.externalCount} onChange={(v:any) => setNewTask({...newTask, externalCount: v})} type="number" />
+            <FormField label="Required Skill Level (s_req)" value={newTask.requiredSkill} onChange={(v:any) => setNewTask({...newTask, requiredSkill: v})} type="number" />
           </div>
         </div>
 

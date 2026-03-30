@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { 
-  calculateFinalScore, 
-  calculatePc,
-  determineWu,
-  determineAc,
-  determineWd,
-  determineEb
-} from '@/lib/algorithm';
+import { calculateAlgorithmS } from '@/lib/algorithm';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: taskId } = await params;
-    const { qualityScore } = await req.json(); // Q (0.0 - 1.0)
+    const { qualityScore, actualHours: inputActualHours } = await req.json(); // Q (1-5), h_act
     const now = new Date();
 
     const task = await prisma.task.findUnique({
@@ -31,24 +24,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         return NextResponse.json({ error: 'Task is already completed' }, { status: 400 });
     }
 
-    const C = task.baseReward; // Using baseReward for consistency
-
-    // --- NEW ALGORITHM S: DATA GATHERING ---
-
-    // 1. Efficiency Bonus (Eb)
     const tAny = task as any;
-    const actualHours = (now.getTime() - task.updatedAt.getTime()) / (1000 * 3600);
-    const Eb = determineEb(tAny.expectedHours || 1.0, actualHours);
+    const uAny = task.assignee as any;
 
-    // 2. Skill Uniqueness (Wu: Percentile-based)
+    // --- 1. STATISTICS GATHERING for Relational Factors ---
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    // Get all completed tasks in last 30d
-    const recentTasks = await prisma.task.findMany({
+    // Wu Distribution
+    const recentTasks = (await prisma.task.findMany({
       where: { status: 'COMPLETED', updatedAt: { gte: thirtyDaysAgo } },
       select: { tags: true } as any
-    }) as any[];
+    })) as any[];
     
     const tagFreqs: Record<string, number> = {};
     recentTasks.forEach((t: any) => {
@@ -57,78 +44,74 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         tagFreqs[tag] = (tagFreqs[tag] || 0) + 1;
       });
     });
-
     const taskTags = JSON.parse(tAny.tags || '[]');
-    const currentTagFreq = Math.min(...taskTags.map((tag: string) => tagFreqs[tag] || 1));
+    const currentTagFreq = Math.min(...(taskTags.length > 0 ? taskTags.map((tag: string) => tagFreqs[tag] || 1) : [1]));
     const allFreqs = Object.values(tagFreqs);
     if (allFreqs.length === 0) allFreqs.push(1);
-    
-    const Wu = determineWu(currentTagFreq, allFreqs);
 
-    // 3. Distribution (Wd: Individual reliance)
+    // Wd Reliance
     const assigneeHistory = await prisma.task.findMany({
       where: { assigneeId: task.assigneeId, status: 'COMPLETED' },
       select: { requesterId: true }
     });
-    const Wd = determineWd(assigneeHistory);
+    const counts: Record<string, number> = {};
+    assigneeHistory.forEach(h => counts[h.requesterId] = (counts[h.requesterId] || 0) + 1);
+    const maxCount = assigneeHistory.length > 0 ? Math.max(...Object.values(counts)) : 0;
+    const reliance_ratio = assigneeHistory.length > 0 ? maxCount / assigneeHistory.length : 0;
 
-    // 4. Anti-Collusion (Ac: Fraud Score F)
+    // Global Activity (L_base) and Difficulty (D_avg)
+    const recentTxs = (await prisma.transaction.findMany({
+      where: { timestamp: { gte: thirtyDaysAgo } },
+      select: { difficulty: true, finalScore: true } as any
+    })) as any[];
+    const all_activity_L = recentTxs.length > 0 ? recentTxs.map((tx: any) => tx.difficulty * 1.0) : [1.0];
+
+    // Collusion metrics
     const totalAssigneeTxs = await prisma.transaction.findMany({
       where: { toUserId: task.assigneeId },
       select: { fromUserId: true, amount: true }
     });
-    
     const partnerTxs = totalAssigneeTxs.filter(tx => tx.fromUserId === task.requesterId);
     const r = totalAssigneeTxs.length > 0 ? partnerTxs.length / totalAssigneeTxs.length : 0;
-    
-    // Closed Loop (c)
     const mutualTxs = await prisma.transaction.findMany({
       where: { fromUserId: task.assigneeId, toUserId: task.requesterId }
     });
     const totalAllTxs = totalAssigneeTxs.length + (await prisma.transaction.count({ where: { fromUserId: task.assigneeId } }));
     const c = totalAllTxs > 0 ? (partnerTxs.length + mutualTxs.length) / totalAllTxs : 0;
+    const allTxs = (await prisma.transaction.findMany({ select: { amount: true }, take: 100 })) as any[];
+    const amounts = allTxs.map((t:any) => t.amount).sort((a:number,b:number) => a-b);
+    const median = amounts.length > 0 ? amounts[Math.floor(amounts.length / 2)] : (task.baseReward || 100);
+    const p = Math.abs((task.baseReward || 100) - median) / median;
 
-    // Price Anomaly (p)
-    const allTxs = await prisma.transaction.findMany({ select: { amount: true }, take: 100 });
-    const amounts = allTxs.map(t => t.amount).sort((a,b) => a-b);
-    const median = amounts.length > 0 ? amounts[Math.floor(amounts.length / 2)] : C;
-    const p = Math.abs(C - median) / median;
-
-    const Ac = determineAc({ recurrence: r, closedLoop: c, priceAnomaly: p });
-
-    // 5. Standard Factors
-    const Q = parseFloat(qualityScore);
-    const Pc = calculatePc(tAny.position);
-    const Aa = 1.0; // Activity Placeholder
-    const Rc = 1.0; // Rank Placeholder
-
-    // --- FINAL CALCULATION ---
-    const S = calculateFinalScore({
-        coinAmount: C,
-        qualityRating: Q,
-        activityRate: Aa,
-        rankMultiplier: Rc,
-        skillUniqueness: Wu,
-        roleMultiplier: Pc,
-        efficiencyBonus: Eb,
-        distributionRate: Wd,
-        antiCollusion: Ac
+    // --- 2. RUN ALGORITHM ENGINE ---
+    const actualHours = inputActualHours || (now.getTime() - task.updatedAt.getTime()) / (1000 * 3600);
+    
+    const { score, factors, logs } = calculateAlgorithmS({
+      reward: task.baseReward || 100,
+      redistribution_cost: 0,
+      actual_hours: actualHours,
+      expected_hours: (task as any).expectedHours || 1.0,
+      rating: parseFloat(qualityScore) || 3.0,
+      complexity: {
+        n_o: (task as any).outputs || 1,
+        n_b: (task as any).branches || 0,
+        n_s: (task as any).skillCount || 1,
+        n_e: (task as any).externalCount || 0
+      },
+      required_skill_level: (task as any).requiredSkill || 1.0,
+      user_skill_level: uAny.skillLevel || 1.0,
+      user_role: uAny.role || "PLAYER",
+      user_rank: uAny.rank || "E",
+      all_task_freqs_30d: allFreqs,
+      t_freq: currentTagFreq,
+      all_activity_L: all_activity_L,
+      reliance_ratio: reliance_ratio,
+      collusion_metrics: { r, c, p }
     });
 
-    console.log(`[ALGORITHM S LOG] ID:${taskId} C:${C} Q:${Q} Wu:${Wu.toFixed(3)} Wd:${Wd.toFixed(3)} Ac:${Ac.toFixed(2)} Eb:${Eb.toFixed(2)} Score:${S.toFixed(2)}`);
-
-    // --- DATABASE UPDATES ---
-    // Skill Level Update (Same logic as before)
-    let currentSkills = JSON.parse(task.assignee.skills || '[]');
-    const updatedSkills = [...currentSkills];
-    taskTags.forEach((tag: string) => {
-      const idx = updatedSkills.findIndex((s: any) => s.name === tag);
-      if (idx > -1) {
-        if (updatedSkills[idx].level === 'GRAY') updatedSkills[idx].level = 'BRONZE';
-      } else {
-        updatedSkills.push({ name: tag, level: 'BRONZE' });
-      }
-    });
+    // --- 3. DATABASE UPDATES ---
+    const updatedSkills = JSON.parse(task.assignee.skills || '[]');
+    // (Logic for skill progression could be added here)
 
     await prisma.$transaction([
       prisma.transaction.create({
@@ -136,31 +119,42 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           taskId,
           fromUserId: task.requesterId,
           toUserId: task.assigneeId,
-          amount: C, type: 'PAYMENT',
-          wu: Wu, wd: Wd, pc: Pc, q: Q, ac: Ac, eb: Eb, finalScore: S
+          amount: factors.C, type: 'PAYMENT',
+          wu: factors.Wu, 
+          wd: factors.Wd, 
+          pc: factors.Pc, 
+          q: factors.Q, 
+          ac: factors.Ac, 
+          aa: factors.Aa,
+          rc: factors.Rc,
+          eb: factors.Eb,
+          actualHours: actualHours,
+          rating: factors.Q, // Mapping normalized Q back if needed
+          difficulty: factors.D,
+          finalScore: score
         } as any
       }),
       prisma.task.update({
         where: { id: taskId },
-        data: { status: 'COMPLETED', qualityScore: Q }
+        data: { status: 'COMPLETED' }
       }),
       prisma.user.update({
         where: { id: task.requesterId },
-        data: { balanceFlow: { decrement: C } } // Simplified flow deduction
+        data: { balanceFlow: { decrement: task.baseReward } }
       }),
       prisma.user.update({
         where: { id: task.assigneeId },
         data: {
-          balanceStock: { increment: C }, 
-          evaluationScore: { increment: S },
-          skills: JSON.stringify(updatedSkills)
+          balanceStock: { increment: task.baseReward }, 
+          evaluationScore: { increment: score },
+          // skills: JSON.stringify(updatedSkills)
         }
       })
     ]);
 
-    return NextResponse.json({ finalScoreS: S, factors: { Wu, Wd, Ac, Eb, Pc, Q } });
+    return NextResponse.json({ finalScoreS: score, factors, logs });
   } catch (error: any) {
-    console.error(error);
+    console.error(`[ALGORITHM S ERROR] ${error.message}`);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
