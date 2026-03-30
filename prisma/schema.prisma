@@ -42,6 +42,7 @@ model Task {
   status            String    @default("OPEN")
   
   baseReward        Float
+  finalReward       Float     @default(0.0) // RESTORED: finalized bid amount
   expectedHours     Float     @default(1.0)
   outputs           Int       @default(1)
   branches          Int       @default(0)
@@ -99,7 +100,7 @@ model Transaction {
   amount            Float
   finalScore        Float     @default(0.0)
 
-  // Audit Logs (Defaults added for legacy compatibility)
+  // Audit Logs (12 factors)
   wu                Float     @default(1.0)
   wd                Float     @default(1.0)
   pc                Float     @default(1.0)
