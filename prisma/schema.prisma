@@ -42,7 +42,7 @@ model Task {
   status            String    @default("OPEN")
   
   baseReward        Float
-  expectedHours     Float
+  expectedHours     Float     @default(1.0) // ADDED DEFAULT: compatibility for legacy seed / build
   outputs           Int       @default(1)
   branches          Int       @default(0)
   skillCount        Int       @default(1)
@@ -123,8 +123,8 @@ model RankHistory {
 
 model KPILog {
   id          String   @id @default(uuid())
-  metricName  String?  // RESTORED: compatible with legacy reset-flow API
-  value       Float?   // RESTORED: compatible with legacy reset-flow API
+  metricName  String?
+  value       Float?
   timestamp   DateTime @default(now())
 }
 
