@@ -99,6 +99,7 @@ export async function GET() {
 
     return NextResponse.json({ message: 'DB initialized successfully with full bidding lifecycle' });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('DATABASE_CONNECTION_ERROR:', error);
+    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 });
   }
 }
