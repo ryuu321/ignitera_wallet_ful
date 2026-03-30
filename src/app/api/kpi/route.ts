@@ -26,10 +26,20 @@ export async function GET() {
     const cTier = scores.filter((s: number) => s < 70).length;
 
     const recentTx = await prisma.transaction.findMany({
-      take: 10,
+      take: 20,
       orderBy: { timestamp: 'desc' },
-      include: { toUser: { select: { anonymousName: true } } }
+      include: { toUser: { select: { anonymousName: true, role: true } } }
     });
+
+    // Grouping for "Volume by Role" Chart
+    const roles = ['ADMIN', 'PLAYER', 'MANAGER', 'LEADER'];
+    const roleVolume = await Promise.all(roles.map(async (role) => {
+      const sum = await prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { toUser: { role: role } }
+      });
+      return sum._sum.amount || 0;
+    }));
 
     return NextResponse.json({
       circulationVolume: circulation,
@@ -37,6 +47,8 @@ export async function GET() {
       dispersion: 0.84, 
       qualityDistribution: [sTier, aTier, bTier, cTier],
       weeklyCirculation: [120, 150, 130, 180, 200, 170, 210],
+      roleLabels: roles,
+      roleVolume: roleVolume,
       transactions: recentTx
     });
   } catch (error) {

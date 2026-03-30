@@ -38,6 +38,7 @@ model Task {
   baseReward        Float     
   finalReward       Float?    
   status            String    @default("OPEN")
+  position          String    @default("GENERAL") // MANAGER, SUB_MANAGER, SPECIALIST, GENERAL
   qualityScore      Float?
   bids              Bid[]
   messages          TaskMessage[]

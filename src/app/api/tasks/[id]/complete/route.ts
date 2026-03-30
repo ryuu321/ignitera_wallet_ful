@@ -4,7 +4,8 @@ import {
   calculateFinalScore, 
   determineWu, 
   determineAc,
-  determineWd
+  determineWd,
+  calculatePc
 } from '@/lib/algorithm';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -51,7 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // 3. Components
     const Wu = determineWu(assigneeSkills, allSkills);
     const Wd = determineWd(task.assigneeId, historyMapped); 
-    const Pc = task.assignee.role === 'MANAGER' ? 1.2 : 1.0;
+    const Pc = calculatePc(task.position); // Dynamic based on the position within the task
     const Q = parseFloat(qualityScore);
     const Ac = determineAc(task.requesterId, task.assigneeId, historyMapped);
 

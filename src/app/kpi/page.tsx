@@ -91,11 +91,11 @@ export default function KPIPage() {
   };
 
   const barData = {
-    labels: ['Dev', 'Prod', 'UX', 'QA', 'HR'],
+    labels: data.roleLabels || ['ADMIN', 'PLAYER', 'MANAGER', 'LEADER'],
     datasets: [{
       label: 'Volume (₲)',
-      data: [12000, 19000, 3000, 5000, 2000],
-      backgroundColor: ['#6366f1', '#a855f7', '#22d3ee', '#10b981', '#f59e0b'],
+      data: data.roleVolume || [0, 0, 0, 0],
+      backgroundColor: ['#6366f1', '#a855f7', '#22d3ee', '#10b981'],
       borderRadius: 8
     }]
   };
@@ -137,7 +137,7 @@ export default function KPIPage() {
 
         <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div className="glass-card" style={{ padding: '24px', minHeight: '400px' }}>
-                <h3 style={{ marginBottom: '20px' }}>Volume by Department</h3>
+                <h3 style={{ marginBottom: '20px' }}>Coin Volume by Role</h3>
                 <div style={{ height: '300px' }}>
                     <Bar options={chartOptions} data={barData} />
                 </div>
@@ -236,6 +236,29 @@ export default function KPIPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Algorithm Explanation */}
+          <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px', background: 'rgba(99, 102, 241, 0.03)' }}>
+            <h3 style={{ marginBottom: '20px' }}>Algorithm S Logic & Compliance</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+              <div style={{ fontSize: '0.85rem' }}>
+                <strong style={{ color: 'var(--primary)', display: 'block', marginBottom: '5px' }}>Wu (Uniqueness)</strong>
+                <p style={{ color: 'rgba(255,255,255,0.5)' }}>Calculated via Inverse Skill Frequency. High-difficulty or rare skill tasks double (x2.0) the evaluation weight.</p>
+              </div>
+              <div style={{ fontSize: '0.85rem' }}>
+                <strong style={{ color: 'var(--secondary)', display: 'block', marginBottom: '5px' }}>Wd (Dispersion)</strong>
+                <p style={{ color: 'rgba(255,255,255,0.5)' }}>Measures network variety. High collaboration variety increases the multiplier up to 1.0 (Base 0.5).</p>
+              </div>
+              <div style={{ fontSize: '0.85rem' }}>
+                <strong style={{ color: 'var(--success)', display: 'block', marginBottom: '5px' }}>Ac (Anti-Collusion)</strong>
+                <p style={{ color: 'rgba(255,255,255,0.5)' }}>Drops toward 0.0 if excessive back-and-forth between the same users is detected (Threshold: 30% of total activity).</p>
+              </div>
+              <div style={{ fontSize: '0.85rem' }}>
+                <strong style={{ color: 'var(--warning)', display: 'block', marginBottom: '5px' }}>Pc (Role Multiplier)</strong>
+                <p style={{ color: 'rgba(255,255,255,0.5)' }}>Managerial or Leadership bonuses. Base 1.0, Leader 1.2. Only applied upon peer-review validation.</p>
+              </div>
             </div>
           </div>
         </section>

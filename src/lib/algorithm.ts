@@ -12,6 +12,16 @@ export interface EvaluationInput {
   collusionFactor: number;  // Ac: 0.0 - 1.0
 }
 
+export function calculatePc(position: string): number {
+  switch (position) {
+    case 'MANAGER': return 1.2;
+    case 'SUB_MANAGER': return 1.15;
+    case 'SPECIALIST': return 1.1;
+    case 'GENERAL': return 1.0;
+    default: return 1.0;
+  }
+}
+
 /**
  * Calculates the final stock coin score (S).
  */
