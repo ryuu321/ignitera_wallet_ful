@@ -42,7 +42,7 @@ model Task {
   status            String    @default("OPEN")
   
   baseReward        Float
-  expectedHours     Float     @default(1.0) // ADDED DEFAULT: compatibility for legacy seed / build
+  expectedHours     Float     @default(1.0)
   outputs           Int       @default(1)
   branches          Int       @default(0)
   skillCount        Int       @default(1)
@@ -68,10 +68,11 @@ model Bid {
   id          String   @id @default(uuid())
   taskId      String
   task        Task     @relation(fields: [taskId], references: [id])
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  bidderId    String   // RENAMED for legacy Compatibility
+  bidder      User     @relation(fields: [bidderId], references: [id])
   amount      Float
   message     String   @default("")
+  status      String   @default("PENDING") // RESTORED for legacy Compatibility
   createdAt   DateTime @default(now())
 }
 
