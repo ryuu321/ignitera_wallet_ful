@@ -20,6 +20,8 @@ export default function ProfilePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newSkill, setNewSkill] = useState('');
+  const [showSkillInput, setShowSkillInput] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -130,12 +132,71 @@ export default function ProfilePage() {
                     <h3 style={{ fontSize: '1.1rem' }}>Identified Skill DNA</h3>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {skills.map((s: string) => (
-                      <span key={s} style={{ padding: '6px 12px', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)', color: 'white', borderRadius: '20px', fontSize: '0.8rem' }}>
-                        {s}
-                      </span>
-                    ))}
+                    {skills.map((s: any) => {
+                      const level = s.level || 'GRAY';
+                      const colorMap: any = {
+                        GRAY: { bg: 'rgba(255,255,255,0.05)', text: 'rgba(255,255,255,0.4)', border: 'rgba(255,255,255,0.1)', shadow: 'none' },
+                        BRONZE: { bg: 'rgba(205, 127, 50, 0.1)', text: '#cd7f32', border: '#cd7f32', shadow: '0 0 10px rgba(205, 127, 50, 0.2)' },
+                        SILVER: { bg: 'rgba(192, 192, 192, 0.1)', text: '#c0c0c0', border: '#c0c0c0', shadow: '0 0 10px rgba(192, 192, 192, 0.2)' },
+                        GOLD: { bg: 'rgba(255, 215, 0, 0.1)', text: '#ffd700', border: '#ffd700', shadow: '0 0 15px rgba(255, 215, 0, 0.4)' }
+                      };
+                      const style = colorMap[level];
+
+                      return (
+                        <span key={s.name} style={{ 
+                          padding: '6px 14px', 
+                          background: style.bg, 
+                          border: `1px solid ${style.border}`, 
+                          color: style.text, 
+                          borderRadius: '20px', 
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold',
+                          boxShadow: style.shadow,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          {level === 'GOLD' && '★'} {s.name || s}
+                        </span>
+                      );
+                    })}
                     {skills.length === 0 && <p style={{ color: 'rgba(255,255,255,0.2)' }}>No skills documented.</p>}
+                </div>
+                
+                <div style={{ marginTop: '20px' }}>
+                  {!showSkillInput ? (
+                    <button 
+                      onClick={() => setShowSkillInput(true)}
+                      style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.4)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                      + Add Self-Applied Skill (Gray)
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        value={newSkill}
+                        onChange={(e) => setNewSkill(e.target.value)}
+                        placeholder="e.g. Photoshop, Python"
+                        style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px', borderRadius: '8px', outline: 'none', fontSize: '0.8rem' }}
+                      />
+                      <button 
+                        onClick={async () => {
+                          if (!newSkill.trim()) return;
+                          const updated = [...skills, { name: newSkill.trim(), level: 'GRAY' }];
+                          await fetch(`/api/users/${currentUser.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ skills: JSON.stringify(updated) })
+                          });
+                          window.location.reload();
+                        }}
+                        style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  )}
                 </div>
             </div>
 

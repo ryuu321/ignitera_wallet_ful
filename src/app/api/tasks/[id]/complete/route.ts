@@ -52,9 +52,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // 3. Components
     const Wu = determineWu(assigneeSkills, allSkills);
     const Wd = determineWd(task.assigneeId, historyMapped); 
-    const Pc = calculatePc(task.position); // Dynamic based on the position within the task
+    const Pc = calculatePc(task.position); 
     const Q = parseFloat(qualityScore);
     const Ac = determineAc(task.requesterId, task.assigneeId, historyMapped);
+
+    // 0. Extract and Process Skills
+    const taskTags = JSON.parse(task.tags || '[]');
+    let currentSkills = [];
+    try {
+      currentSkills = JSON.parse(task.assignee?.skills || '[]');
+      if (!Array.isArray(currentSkills)) throw new Error();
+    } catch(e) {
+      if (task.assignee?.skills) {
+        currentSkills = task.assignee.skills.split(',').map((s: string) => ({ name: s.trim(), level: 'BRONZE' }));
+      }
+    }
+
+    const updatedSkills = [...currentSkills];
+    taskTags.forEach((tag: string) => {
+      const idx = updatedSkills.findIndex((s: any) => s.name === tag);
+      if (idx > -1) {
+        if (updatedSkills[idx].level === 'GRAY') {
+          updatedSkills[idx].level = 'BRONZE';
+        }
+      } else {
+        updatedSkills.push({ name: tag, level: 'BRONZE' });
+      }
+    });
 
     const S = calculateFinalScore({
         coinAmount: C,
@@ -100,8 +124,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       prisma.user.update({
         where: { id: task.assigneeId },
         data: {
-          balanceStock: { increment: C }, // C (Contract Reward) added to Stock
-          evaluationScore: { increment: S } // S (Algrithm Score) added to Evaluation only
+          balanceStock: { increment: C }, 
+          evaluationScore: { increment: S },
+          skills: JSON.stringify(updatedSkills)
         }
       })
     ]);

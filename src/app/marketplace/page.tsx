@@ -30,7 +30,7 @@ export default function MarketplacePage() {
   const [showReviewModal, setShowReviewModal] = useState<any>(null); // task object
   const [showMessageModal, setShowMessageModal] = useState<any>(null); // task object
   
-  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: '' });
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
   const [qualityScore, setQualityScore] = useState('0.9');
   
@@ -76,10 +76,14 @@ export default function MarketplacePage() {
       await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newTask, requesterId: currentUser.id }),
+        body: JSON.stringify({ 
+          ...newTask, 
+          requesterId: currentUser.id,
+          tags: newTask.tags.split(',').map(s => s.trim()).filter(s => s) 
+        }),
       });
       setShowModal(false);
-      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL' });
+      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: '' });
       fetchData();
     } catch (err) { console.error(err); }
   };
@@ -391,6 +395,7 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
             { value: 'MANAGER', label: 'Manager / Project Owner (x1.2)' }
           ]} 
         />
+        <FormField label="Required Skill Tags (comma separated)" value={newTask.tags} onChange={(v:any) => setNewTask({...newTask, tags: v})} placeholder="e.g. Next.js, TypeScript, UI Design" />
         <div style={{ display: 'flex', gap: '12px', marginTop: '30px' }}>
           <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
           <button type="submit" className="neon-button" style={{ flex: 2 }}>Initialize Emission</button>

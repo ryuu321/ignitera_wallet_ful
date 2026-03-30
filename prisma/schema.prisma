@@ -39,6 +39,7 @@ model Task {
   finalReward       Float?    
   status            String    @default("OPEN")
   position          String    @default("GENERAL") // MANAGER, SUB_MANAGER, SPECIALIST, GENERAL
+  tags              String    @default("[]") // JSON string of tags like ["Next.js", "Design"]
   qualityScore      Float?
   bids              Bid[]
   messages          TaskMessage[]
