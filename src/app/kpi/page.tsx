@@ -67,8 +67,26 @@ export default function KPIPage() {
       }
     },
     scales: {
-      y: { grid: { color: 'rgba(255, 255, 255, 0.03)' }, ticks: { color: 'rgba(255, 255, 255, 0.4)' } },
-      x: { grid: { display: false }, ticks: { color: 'rgba(255, 255, 255, 0.4)' } }
+      y: { 
+        grid: { color: 'rgba(255, 255, 255, 0.03)' }, 
+        ticks: { color: 'rgba(255, 255, 255, 0.4)' },
+        title: {
+          display: true,
+          text: 'Amount (₲)',
+          color: 'rgba(255, 255, 255, 0.3)',
+          font: { size: 10 }
+        }
+      },
+      x: { 
+        grid: { display: false }, 
+        ticks: { color: 'rgba(255, 255, 255, 0.4)' },
+        title: {
+          display: true,
+          text: 'Category / Timeline',
+          color: 'rgba(255, 255, 255, 0.3)',
+          font: { size: 10 }
+        }
+      }
     }
   };
 

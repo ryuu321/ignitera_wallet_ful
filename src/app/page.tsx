@@ -232,10 +232,11 @@ export default function DashboardPage() {
 
               <div className={clsx("glass-card", styles.kpiPreview)}>
                 <div className={styles.cardHeader}>
-                  <h3>Circulation Logic</h3>
-                  <div className={clsx(styles.badge, styles.pulse)}>Real-time</div>
+                  <h3>Circulation Activity (₲)</h3>
+                  <div className={clsx(styles.badge, styles.pulse)}>Live</div>
                 </div>
                 <div className={styles.chartPlaceholder}>
+                  <div style={{ position: 'absolute', top: '10px', left: '-20px', transform: 'rotate(-90deg)', fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)' }}>Volume</div>
                   <div className={styles.bars}>
                     {stats.circulation.map((v, i) => (
                       <div key={i} className={styles.bar} style={{ height: `${(v/120)*100}%` }} />

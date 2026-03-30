@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { 
   calculateFinalScore, 
   determineWu, 
-  determineAc 
+  determineAc,
+  determineWd
 } from '@/lib/algorithm';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ error: 'Task not ready for completion' }, { status: 400 });
     }
 
+    if (task.status === 'COMPLETED') {
+        return NextResponse.json({ error: 'Task is already completed' }, { status: 400 });
+    }
+
+    const C = task.finalReward;
+    const totalRequesterBalance = task.requester.balanceFlow + task.requester.balanceStock;
+
+    if (totalRequesterBalance < C) {
+        return NextResponse.json({ error: 'Insufficent total balance (Flow + Stock) to pay the reward' }, { status: 400 });
+    }
+
     // --- ALGORITHM S CALCULATION ---
     
     // 1. Get all user skills for Wu calculation
@@ -37,9 +49,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const historyMapped = history.map((h: any) => ({ fromId: h.fromUserId, toId: h.toUserId }));
 
     // 3. Components
-    const C = task.finalReward;
     const Wu = determineWu(assigneeSkills, allSkills);
-    const Wd = 0.84; // Placeholder for network dispersion (Wd)
+    const Wd = determineWd(task.assigneeId, historyMapped); 
     const Pc = task.assignee.role === 'MANAGER' ? 1.2 : 1.0;
     const Q = parseFloat(qualityScore);
     const Ac = determineAc(task.requesterId, task.assigneeId, historyMapped);
@@ -54,6 +65,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
 
     // --- DATABASE UPDATES (ATOMIC TRANSACTION) ---
+    const flowBalance = task.requester.balanceFlow;
+    let flowDecrement = C;
+    let stockDecrement = 0;
+
+    // If Flow is insufficient, take from Stock
+    if (flowBalance < C) {
+      flowDecrement = flowBalance;
+      stockDecrement = C - flowBalance;
+    }
+
     await prisma.$transaction([
       prisma.transaction.create({
         data: {
@@ -70,13 +91,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
       prisma.user.update({
         where: { id: task.requesterId },
-        data: { balanceFlow: { decrement: C } }
+        data: { 
+          balanceFlow: { decrement: flowDecrement },
+          balanceStock: { decrement: stockDecrement }
+        }
       }),
       prisma.user.update({
         where: { id: task.assigneeId },
         data: {
-          balanceStock: { increment: S },
-          evaluationScore: { increment: S / 100 }
+          balanceStock: { increment: C }, // C (Contract Reward) added to Stock
+          evaluationScore: { increment: S } // S (Algrithm Score) added to Evaluation only
         }
       })
     ]);
