@@ -5,17 +5,18 @@ const prisma = new PrismaClient();
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const { skills, skillLevel } = body;
     
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(skills !== undefined && { skills }),
-        ...(skillLevel !== undefined && { skillLevel: parseFloat(skillLevel) }),
+        ...(skillLevel !== undefined && { skillLevel: parseFloat(skillLevel.toString()) }),
       }
     });
 
