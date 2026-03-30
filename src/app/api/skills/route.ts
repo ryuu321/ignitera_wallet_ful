@@ -1,34 +1,36 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { SKILL_CATEGORIES } from '@/lib/skills';
+import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from 'next/server';
+
+const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    let skills = await prisma.skillMaster.findMany();
-    
-    // Seed if empty
-    if (skills.length === 0) {
-      const seedData = Object.entries(SKILL_CATEGORIES).flatMap(([cat, names]) => 
-        names.map(name => ({ name, category: cat }))
-      );
-      await prisma.skillMaster.createMany({ data: seedData });
-      skills = await prisma.skillMaster.findMany();
-    }
-    
+    const skills = await prisma.skillMaster.findMany({
+      orderBy: { name: 'asc' }
+    });
     return NextResponse.json(skills);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch skills' }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const { name, category } = await req.json();
-    const skill = await prisma.skillMaster.create({
-      data: { name, category: category || 'General' }
+    if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+
+    const newSkill = await prisma.skillMaster.create({
+      data: {
+        name,
+        category: category || 'GENERAL'
+      }
     });
-    return NextResponse.json(skill);
-  } catch (error) {
-    return NextResponse.json({ error: 'Skill already exists or invalid data' }, { status: 400 });
+
+    return NextResponse.json(newSkill);
+  } catch (err: any) {
+    if (err.code === 'P2002') {
+        return NextResponse.json({ error: 'Skill already exists' }, { status: 400 });
+    }
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

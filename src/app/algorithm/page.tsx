@@ -14,7 +14,8 @@ import {
   UserCheck,
   Award,
   Activity,
-  Cpu
+  Cpu,
+  Star
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from '../page.module.css';
@@ -79,12 +80,14 @@ export default function AlgorithmDocs() {
             {/* Factor Groups */}
             <motion.div variants={item} className="glass-card" style={{ padding: '32px' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Cpu size={20} color="#6366f1" /> Structural Multipliers
+                    <Star size={20} color="#ffd700" /> Graded Mastery (Sf)
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <FactorInfo title="Wu (Uniqueness)" desc="Rewards tasks with rare skill-tag combinations in the local ecosystem." />
-                    <FactorInfo title="Wd (Dispersion)" desc="Penalizes repeated same-source transactions to prevent network centrality." />
-                    <FactorInfo title="Pc (Position)" desc="Multiplier for the mission's hierarchical responsibility (e.g., Manager x1.2)." />
+                    <div style={{ borderLeft: '2px solid #ffd700', paddingLeft: '20px' }}>
+                         <div style={{ fontWeight: '900', fontSize: '1rem', color: 'white' }}>Skill Grades</div>
+                         <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Mastery levels: **Basic < Bronze < Silver < Gold.** Higher grades increase your effective baseline for the **Sf** factor.</p>
+                    </div>
+                    <FactorInfo title="Sf (Skill Factor)" desc="Rewards performing tasks above your registered grade-baseline. A 'Silver' performer taking on 'Gold' level logic receives a 1.2x boost." />
                 </div>
             </motion.div>
 
@@ -95,7 +98,7 @@ export default function AlgorithmDocs() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <FactorInfo title="Aa (Activity)" desc="Measures current cycle output relative to the system-wide peer average." />
                     <FactorInfo title="Df (Difficulty)" desc="Objective payload (n_outputs, n_branches, n_skills) normalization." />
-                    <FactorInfo title="Sf (Skill Mastery)" desc="Rewards users attempting tasks above their current EMA mastery level." />
+                    <FactorInfo title="Eb (Efficiency)" desc="Time-saving bonus for completion before the requested deadline." />
                 </div>
             </motion.div>
 
@@ -106,7 +109,7 @@ export default function AlgorithmDocs() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <FactorInfo title="Ac (Anti-Collusion)" desc="Real-time mitigation of reciprocity and price anomaly rings." />
                     <FactorInfo title="Rr (Rank Correction)" desc="Promotion bonus: 1 + 0.003 * (13 - r). Boosts standing in top-tiers." />
-                    <FactorInfo title="Eb (Efficiency)" desc="Time-saving bonus for completion before the requested deadline." />
+                    <FactorInfo title="Wd (Dispersion)" desc="Penalizes repeated same-source transactions to prevent network centrality." />
                 </div>
             </motion.div>
 
