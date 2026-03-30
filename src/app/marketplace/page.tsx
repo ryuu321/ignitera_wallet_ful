@@ -10,7 +10,8 @@ import {
   X,
   Loader2,
   MessageSquare,
-  Send
+  Send,
+  History as HistoryIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
@@ -198,8 +199,11 @@ export default function MarketplacePage() {
                   className={clsx(styles.navItem, view === 'my-bids' && styles.navItemActive)} 
                   onClick={() => setView('my-bids')}
                 >
-                  <User size={18} /> <span>My Active Bids</span>
+                  <HistoryIcon size={18} /> <span>My Active Bids</span>
                 </button>
+                <Link href="/profile" className={styles.navItem}>
+                  <User size={18} /> <span>Profile DNA</span>
+                </Link>
             </div>
          </div>
 

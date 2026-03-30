@@ -13,7 +13,9 @@ import {
   Briefcase, 
   BarChart3, 
   Settings,
+  User,
   ChevronRight,
+  History,
   Plus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -111,6 +113,10 @@ export default function DashboardPage() {
           <Link href="/kpi" className={styles.navItem}>
             <BarChart3 size={20} />
             <span>Analytics</span>
+          </Link>
+          <Link href="/profile" className={styles.navItem}>
+            <User size={20} />
+            <span>Profile</span>
           </Link>
           <Link href="/settings" className={styles.navItem}>
             <Settings size={20} />
