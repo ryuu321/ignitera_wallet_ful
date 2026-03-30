@@ -2,13 +2,14 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('--- Reseting for Neutral Ecosystem Simulation ---')
+  console.log('--- Reseting for Neutral Ecosystem Simulation (Final Spec) ---')
   
-  // Clean
+  // Clean with relation care
   await prisma.bid.deleteMany({})
   await prisma.transaction.deleteMany({})
   await prisma.taskMessage.deleteMany({})
   await prisma.task.deleteMany({})
+  await prisma.kPILog.deleteMany({})
   await prisma.user.deleteMany({})
   await prisma.skillMaster.deleteMany({})
 
@@ -39,12 +40,12 @@ async function main() {
     createdUsers.push(user)
   }
 
-  // 3. Pre-defined Tasks with Complexity Matrix
+  // 3. Pre-defined Tasks with Complexity Matrix (outputs, branches)
   const tasks = [
     {
       title: 'Neural Wallet Core Refactoring',
-      description: 'Major refactor of the core transaction logic to improve security and efficiency. Required $D$ is high.',
-      reward: 1200,
+      description: 'Major refactor of the core transaction logic to improve security and efficiency.',
+      baseReward: 1200,
       expectedHours: 40,
       outputs: 5,
       branches: 12,
@@ -59,7 +60,7 @@ async function main() {
     {
       title: 'Marketing Automation Strategy',
       description: 'Create a detailed strategy for automating internal marketing flows across channels.',
-      reward: 800,
+      baseReward: 800,
       expectedHours: 16,
       outputs: 2,
       branches: 3,
@@ -70,21 +71,6 @@ async function main() {
       requesterId: createdUsers[1].id, // Nova
       position: 'MANAGER',
       status: 'OPEN'
-    },
-    {
-      title: 'UI Component Library Cleanup',
-      description: 'Basic refactoring of existing UI components to follow new design system rules.',
-      reward: 350,
-      expectedHours: 8,
-      outputs: 1,
-      branches: 1,
-      skillCount: 1,
-      externalCount: 0,
-      requiredSkill: 1.0,
-      tags: JSON.stringify(['Next.js', 'UI/UX Design']),
-      requesterId: createdUsers[2].id, // Ray
-      position: 'GENERAL',
-      status: 'OPEN'
     }
   ]
 
@@ -92,7 +78,7 @@ async function main() {
     await prisma.task.create({ data: t as any })
   }
 
-  console.log('--- Simulation Data Synchronized Successfully ---')
+  console.log('--- Simulation Data Synchronized Successfully (S-Rank Activated) ---')
 }
 
 main()
