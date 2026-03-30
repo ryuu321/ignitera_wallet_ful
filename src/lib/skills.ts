@@ -1,27 +1,36 @@
 /**
- * Master Skill List for Ignitera Wallet
- * To prevent typos and redundant tag creation.
+ * Master Skill List with Categories
  */
 
-export const MASTER_SKILLS = [
-  'Next.js',
-  'React',
-  'TypeScript',
-  'Python',
-  'AWS',
-  'Azure',
-  'PostgreSQL',
-  'Solidity',
-  'Machine Learning',
-  'UI Design',
-  'UX Strategy',
-  'Project Management',
-  'Systems Architecture',
-  'Cyber Security',
-  'Agile Coaching',
-  'Marketing Data Science',
-  'Branding',
-  'Customer Success'
-] as const;
+export const SKILL_CATEGORIES: { [key: string]: string[] } = {
+  'Development': [
+    'Next.js',
+    'React',
+    'TypeScript',
+    'Python',
+    'PostgreSQL',
+    'Solidity',
+    'Systems Architecture'
+  ],
+  'Design': [
+    'UI Design',
+    'UX Strategy',
+    'Branding'
+  ],
+  'AI & Data': [
+    'Machine Learning',
+    'Marketing Data Science'
+  ],
+  'Cloud & Security': [
+    'AWS',
+    'Azure',
+    'Cyber Security'
+  ],
+  'Management': [
+    'Project Management',
+    'Agile Coaching',
+    'Customer Success'
+  ]
+};
 
-export type MasterSkill = typeof MASTER_SKILLS[number];
+export const MASTER_SKILLS = Object.values(SKILL_CATEGORIES).flat();
