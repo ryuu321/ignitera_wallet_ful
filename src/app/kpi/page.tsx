@@ -90,6 +90,10 @@ export default function KPIPage() {
     }
   };
 
+
+
+  if (loading || !data) return <div style={{ height: '100vh', background: '#050511', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Connecting to Audit Hub...</div>;
+
   const barData = {
     labels: data.roleLabels || ['ADMIN', 'PLAYER', 'MANAGER', 'LEADER'],
     datasets: [{
@@ -99,8 +103,6 @@ export default function KPIPage() {
       borderRadius: 8
     }]
   };
-
-  if (loading || !data) return <div style={{ height: '100vh', background: '#050511', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Connecting to Audit Hub...</div>;
 
   return (
     <div className={styles.dashboardContainer}>
