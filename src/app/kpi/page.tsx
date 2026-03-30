@@ -209,7 +209,9 @@ export default function KPIPage() {
                     <th style={{ padding: '15px' }}>Amount (C)</th>
                     <th style={{ padding: '15px' }}>Wu</th>
                     <th style={{ padding: '15px' }}>Wd</th>
+                    <th style={{ padding: '15px' }}>Pc</th>
                     <th style={{ padding: '15px' }}>Q</th>
+                    <th style={{ padding: '15px' }}>Ac</th>
                     <th style={{ padding: '15px' }}>Final Score (S)</th>
                     <th style={{ padding: '15px' }}>Status</th>
                   </tr>
@@ -222,7 +224,9 @@ export default function KPIPage() {
                       <td style={{ padding: '15px' }}>{tx.amount} ₲</td>
                       <td style={{ padding: '15px', color: 'var(--primary)' }}>x{tx.wu.toFixed(2)}</td>
                       <td style={{ padding: '15px', color: 'var(--secondary)' }}>x{tx.wd.toFixed(2)}</td>
+                      <td style={{ padding: '15px', color: 'rgba(255,255,255,0.5)' }}>x{tx.pc.toFixed(1)}</td>
                       <td style={{ padding: '15px', color: 'var(--success)' }}>x{tx.q.toFixed(1)}</td>
+                      <td style={{ padding: '15px', color: 'var(--warning)' }}>x{tx.ac.toFixed(2)}</td>
                       <td style={{ padding: '15px', fontWeight: '800' }}>{tx.finalScore.toFixed(1)}</td>
                       <td style={{ padding: '15px' }}><span className={styles.badge} style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)' }}>PAID</span></td>
                     </tr>
