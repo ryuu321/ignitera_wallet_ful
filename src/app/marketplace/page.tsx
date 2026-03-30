@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+import { MASTER_SKILLS } from '@/lib/skills';
 
 export default function MarketplacePage() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -30,7 +31,7 @@ export default function MarketplacePage() {
   const [showReviewModal, setShowReviewModal] = useState<any>(null); // task object
   const [showMessageModal, setShowMessageModal] = useState<any>(null); // task object
   
-  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: '' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [] as string[] });
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
   const [qualityScore, setQualityScore] = useState('0.9');
   
@@ -79,11 +80,11 @@ export default function MarketplacePage() {
         body: JSON.stringify({ 
           ...newTask, 
           requesterId: currentUser.id,
-          tags: newTask.tags.split(',').map(s => s.trim()).filter(s => s) 
+          tags: newTask.tags
         }),
       });
       setShowModal(false);
-      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: '' });
+      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [] });
       fetchData();
     } catch (err) { console.error(err); }
   };
@@ -395,7 +396,13 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
             { value: 'MANAGER', label: 'Manager / Project Owner (x1.2)' }
           ]} 
         />
-        <FormField label="Required Skill Tags (comma separated)" value={newTask.tags} onChange={(v:any) => setNewTask({...newTask, tags: v})} placeholder="e.g. Next.js, TypeScript, UI Design" />
+        <FormField 
+          label="Required Skill Tags" 
+          value={newTask.tags} 
+          onChange={(v:any) => setNewTask({...newTask, tags: v})} 
+          type="multi-select" 
+          options={MASTER_SKILLS.map(s => ({ value: s, label: s }))} 
+        />
         <div style={{ display: 'flex', gap: '12px', marginTop: '30px' }}>
           <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
           <button type="submit" className="neon-button" style={{ flex: 2 }}>Initialize Emission</button>
@@ -506,7 +513,7 @@ function MessageModal({ task, messages, currentUser, onClose, onSend, newMessage
   );
 }
 
-function FormField({ label, value, onChange, type = 'text', options = [] }: any) {
+function FormField({ label, value, onChange, type = 'text', options = [], placeholder = '' }: any) {
   return (
     <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>{label}</label>
@@ -522,9 +529,40 @@ function FormField({ label, value, onChange, type = 'text', options = [] }: any)
         >
           {options.map((opt: any) => <option key={opt.value} value={opt.value} style={{ background: '#111' }}>{opt.label}</option>)}
         </select>
+      ) : type === 'multi-select' ? (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+          {options.map((opt: any) => {
+            const isSelected = value.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  const next = isSelected 
+                    ? value.filter((v: string) => v !== opt.value)
+                    : [...value, opt.value];
+                  onChange(next);
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '15px',
+                  fontSize: '0.75rem',
+                  border: '1px solid',
+                  borderColor: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                  background: isSelected ? 'rgba(99, 102, 241, 0.1)' : 'none',
+                  color: isSelected ? 'white' : 'rgba(255,255,255,0.4)',
+                  cursor: 'pointer'
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
       ) : (
         <input 
           type={type} value={value} onChange={(e) => onChange(e.target.value)} 
+          placeholder={placeholder}
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '12px', color: 'white', outline: 'none' }} 
         />
       )}

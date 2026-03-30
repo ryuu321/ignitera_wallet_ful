@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+import { MASTER_SKILLS } from '@/lib/skills';
 
 export default function ProfilePage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -173,17 +174,20 @@ export default function ProfilePage() {
                     </button>
                   ) : (
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <input 
-                        type="text" 
+                      <select 
                         value={newSkill}
                         onChange={(e) => setNewSkill(e.target.value)}
-                        placeholder="e.g. Photoshop, Python"
                         style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 12px', borderRadius: '8px', outline: 'none', fontSize: '0.8rem' }}
-                      />
+                      >
+                        <option value="">Select a skill...</option>
+                        {MASTER_SKILLS.filter(s => !skills.some((ms: any) => ms.name === s)).map(s => (
+                          <option key={s} value={s} style={{ background: '#111' }}>{s}</option>
+                        ))}
+                      </select>
                       <button 
                         onClick={async () => {
-                          if (!newSkill.trim()) return;
-                          const updated = [...skills, { name: newSkill.trim(), level: 'GRAY' }];
+                          if (!newSkill) return;
+                          const updated = [...skills, { name: newSkill, level: 'GRAY' }];
                           await fetch(`/api/users/${currentUser.id}`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
