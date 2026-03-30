@@ -112,6 +112,10 @@ export default function DashboardPage() {
             <User size={20} />
             <span>Profile</span>
           </Link>
+          <Link href="/settings" className={styles.navItem}>
+            <Settings size={20} />
+            <span>Settings</span>
+          </Link>
         </nav>
 
         <div style={{ flex: 1 }} />

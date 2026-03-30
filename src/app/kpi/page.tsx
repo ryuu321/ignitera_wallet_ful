@@ -12,7 +12,10 @@ import {
   Award,
   Activity,
   History,
-  LayoutDashboard
+  LayoutDashboard,
+  Settings,
+  Briefcase,
+  User
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -29,6 +32,7 @@ import {
 } from 'chart.js';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import styles from '../page.module.css';
+import { clsx } from 'clsx';
 import Link from 'next/link';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend);
@@ -84,16 +88,25 @@ export default function KPIPage() {
     <div className={styles.dashboardContainer} style={{ background: '#050511', minHeight: '100vh', color: 'white' }}>
        <aside className={styles.sidebar}>
           <Link href="/" className={styles.logoSection} style={{ textDecoration: 'none' }}>
-             <div className={styles.logoIcon}><ArrowLeft size={20} color="#6366f1" /></div>
+             <div className={styles.logoIcon}><ArrowLeft size={14} color="#6366f1" /></div>
              <span className={styles.logoText}>Back to Hub</span>
           </Link>
+          
+          <nav className={styles.navMenu} style={{ marginTop: '20px', padding: '0 10px' }}>
+             <Link href="/" className={styles.navItem}><LayoutDashboard size={18} /> <span>Overview</span></Link>
+             <Link href="/marketplace" className={styles.navItem}><Briefcase size={18} /> <span>Market</span></Link>
+             <Link href="/kpi" className={clsx(styles.navItem, styles.navItemActive)}><BarChart3 size={18} /> <span>Analytics</span></Link>
+             <Link href="/profile" className={styles.navItem}><User size={18} /> <span>Profile</span></Link>
+             <Link href="/settings" className={styles.navItem}><Settings size={18} /> <span>Settings</span></Link>
+          </nav>
+
           <div style={{ padding: '20px' }}>
              <div style={{ padding: '15px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6366f1', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '8px' }}>
                     <ShieldAlert size={14} />
                     <span>Audit Online</span>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>Algorithm S v2.0 Integrated Core</p>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>Algorithm S v2.0 Integrated</p>
              </div>
           </div>
        </aside>
@@ -105,7 +118,6 @@ export default function KPIPage() {
             <p style={{ color: "rgba(255,255,255,0.4)" }}>Multi-layer hierarchical performance analytics</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-             {/* 8 representative factors in header */}
             <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
                 <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Collusion (Ac)</span>
                 <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800', color: (avg.ac || 1) > 0.9 ? '#10b981' : '#f59e0b' }}>{(avg.ac || 1).toFixed(2)}</span>
@@ -149,14 +161,14 @@ export default function KPIPage() {
                 </div>
             </div>
 
-          {/* SYSTEM WIDE AUDIT LOG - FULL Spec 2.0 */}
+          {/* SYSTEM WIDE AUDIT LOG - RESTORED C (BASE) */}
           <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Activity color="#6366f1" size={20} /> Hierarchical Asset Ledger
                 </h3>
                 <div style={{ fontSize: '0.65rem', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'rgba(255,255,255,0.4)' }}>
-                    Displaying last 50 transactions • 10-Factor Audit Enforced
+                    Displaying last 50 transactions • Audit v2.0
                 </div>
             </div>
             
@@ -165,6 +177,7 @@ export default function KPIPage() {
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', fontSize: '0.6rem', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     <th style={{ padding: '15px' }}>Subject</th>
+                    <th style={{ padding: '15px', color: '#6366f1' }}>C (Base)</th>
                     <th style={{ padding: '15px' }}>Wu</th>
                     <th style={{ padding: '15px' }}>Wd</th>
                     <th style={{ padding: '15px' }}>Pc</th>
@@ -185,6 +198,7 @@ export default function KPIPage() {
                         <div style={{ fontWeight: '900' }}>{tx.toUser?.anonymousName}</div>
                         <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>{tx.toUser?.role}</div>
                       </td>
+                      <td style={{ padding: '15px', fontWeight: 'bold' }}>{tx.amount.toFixed(0)} ₲</td>
                       <td style={{ padding: '15px', color: '#6366f1' }}>{tx.wu?.toFixed(2)}</td>
                       <td style={{ padding: '15px', opacity: 0.5 }}>{tx.wd?.toFixed(2)}</td>
                       <td style={{ padding: '15px', opacity: 0.8 }}>{tx.pc?.toFixed(2)}</td>
@@ -200,31 +214,31 @@ export default function KPIPage() {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={12} style={{ padding: '40px', textAlign: 'center', opacity: 0.3 }}>No neural flux recorded.</td></tr>
+                    <tr><td colSpan={13} style={{ padding: '40px', textAlign: 'center', opacity: 0.3 }}>No neural flux recorded.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* FACTOR KEY (Updated for Spec 2.0) */}
+          {/* FACTOR KEY */}
           <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
             <div>
-                <h4 style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><Target size={16}/> Load Distribution (Wu/Wd)</h4>
+                <h4 style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><Target size={16}/> Base Capital (C)</h4>
                 <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    **Wu** rewards task uniqueness. **Wd** prevents network monoculture by applying decay factors to high-frequency requester pathways.
+                    **C (Base Amount)** represents the agreed mission reward. All other factors act as multipliers on this core value.
                 </p>
             </div>
             <div>
                 <h4 style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><Award size={16}/> Rank Correction (Rr)</h4>
                 <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    Competitive multiplier: `1 + 0.003 * (13 - r)`. Highest ranks receive a compound boost, maintaining the prestige of the top-tier A-D ladder.
+                    Competitive multiplier: `1 + 0.003 * (13 - r)`. Highest ranks receive a compound boost in the A-D hierarchy.
                 </p>
             </div>
             <div>
                 <h4 style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><ShieldAlert size={16}/> Collusion Shield (Ac)</h4>
                 <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    Proactive mitigation against mutual bidding rings. Score suppression is triggered when reciprocity or pricing anomalies exceed neural thresholds.
+                    Triggered when reciprocity or pricing anomalies exceed neural thresholds. Suppression scores safeguard the ecosystem.
                 </p>
             </div>
           </div>
