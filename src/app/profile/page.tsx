@@ -57,6 +57,7 @@ export default function ProfilePage() {
   const trNext = nextRank ? getPromotionThreshold(nextRank) : 0;
   const progressPercent = nextRank ? Math.min(100, (currentUser.monthlyScore / trNext) * 100) : 100;
   const rankBonus = getRankCorrection(currentUser.rank);
+  const mrCurrent = Math.round(getPromotionThreshold(currentUser.rank || 'Z') * 0.7);
 
   return (
     <div className={styles.dashboardContainer} style={{ background: '#050511', color: 'white' }}>
