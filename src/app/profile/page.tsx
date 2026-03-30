@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  User, ArrowLeft, Award, Zap, History, Brain, TrendingUp, LayoutDashboard, X, Calculator, ShieldCheck, Trophy, ArrowUpCircle, AlertTriangle, Info, ChevronRight, BarChart3, Activity, Briefcase, Settings, CheckCircle2, PlusCircle, Star, Plus
+  User, ArrowLeft, Award, Zap, History, Brain, TrendingUp, LayoutDashboard, X, Calculator, ShieldCheck, Trophy, ArrowUpCircle, AlertTriangle, Info, ChevronRight, BarChart3, Activity, Briefcase, Settings, CheckCircle2, PlusCircle, Star, Plus, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
@@ -10,10 +10,10 @@ import { clsx } from 'clsx';
 import Link from 'next/link';
 
 const GRADES = {
-  GRAY: { color: '#94a3b8', label: 'Basic', bg: 'rgba(148, 163, 184, 0.1)' },
-  BRONZE: { color: '#cd7f32', label: 'Bronze', bg: 'rgba(205, 127, 50, 0.1)' },
-  SILVER: { color: '#c0c0c0', label: 'Silver', bg: 'rgba(192, 192, 192, 0.1)' },
-  GOLD: { color: '#ffd700', label: 'Gold', bg: 'rgba(255, 215, 0, 0.1)' }
+  GRAY: { color: '#94a3b8', label: 'Basic (Self)', bg: 'rgba(148, 163, 184, 0.1)', selectable: true },
+  BRONZE: { color: '#cd7f32', label: 'Bronze (System)', bg: 'rgba(205, 127, 50, 0.1)', selectable: false, note: 'Automatic on first task completion' },
+  SILVER: { color: '#c0c0c0', label: 'Silver (Expert)', bg: 'rgba(192, 192, 192, 0.1)', selectable: true, note: 'Manual verification required' },
+  GOLD: { color: '#ffd700', label: 'Gold (Professional)', bg: 'rgba(255, 215, 0, 0.1)', selectable: true, note: 'Credential proof required' }
 };
 
 export default function ProfilePage() {
@@ -94,8 +94,8 @@ export default function ProfilePage() {
         const newSkill = await res.json();
         setMasterSkills(prev => [...prev, newSkill]);
         setNewSkillName('');
-        // Auto select for grade
-        setSelectedSkillNode(newSkill.name);
+        // Setting new skill defaults to GRAY (Self-application)
+        setSkillGrade(newSkill.name, 'GRAY');
       } else {
         const err = await res.json();
         alert(err.error);
@@ -178,7 +178,7 @@ export default function ProfilePage() {
         <header className={styles.topHeader} style={{ marginBottom: '40px' }}>
           <div>
             <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-1.5px' }}>Neural <span style={{ color: '#6366f1' }}>Profile DNA</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '1rem', marginTop: '4px' }}>Hierarchical standing & Grade-based expertise matrix.</p>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '1rem', marginTop: '4px' }}>Hierarchical standing & Graded expertise matrix.</p>
           </div>
           <div style={{ display: 'flex', gap: '15px' }}>
              <div className="glass-card" style={{ padding: '20px 30px', border: '1px solid #10b981' }}>
@@ -217,21 +217,25 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* Graded Skill DNA registration */}
+            {/* Graded Skill DNA Registration */}
             <div className="glass-card" style={{ padding: '32px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Brain color="#a855f7" size={24} />
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '900' }}>Graded Expertise</h3>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '900' }}>Expertise DNA</h3>
                     </div>
                     <div className={styles.badge} style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }}>Mastery Sync</div>
                 </div>
+                
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '25px', lineHeight: '1.5' }}>
+                   Self-apply as **Gray**. **Bronze** is automatic upon mission closure. Silver/Gold requires professional proof.
+                </p>
 
                 {/* Create New Skill Link */}
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                     <input 
                       type="text" value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)}
-                      placeholder="Add missing talent..."
+                      placeholder="Add fresh talent..."
                       style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '10px', color: 'white', fontSize: '0.8rem', outline: 'none' }}
                     />
                     <button onClick={handleCreateNewSkill} style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#a855f7', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer' }}><Plus size={20} /></button>
@@ -266,13 +270,36 @@ export default function ProfilePage() {
                                 <AnimatePresence>
                                 {isSelected && (
                                     <motion.div initial={{ opacity: 0, scale: 0.9, y: 5 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} 
-                                        style={{ position: 'absolute', top: '100%', left: '0', zIndex: 10, marginTop: '10px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px', display: 'flex', flexWrap: 'wrap', gap: '5px', width: '220px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
+                                        style={{ position: 'absolute', top: '100%', left: '0', zIndex: 10, marginTop: '10px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '15px', width: '260px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
                                     >
-                                        <div style={{ width: '100%', fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '5px' }}>SET PROFICIENCY GRADE</div>
-                                        {Object.entries(GRADES).map(([key, config]) => (
-                                            <button key={key} onClick={() => setSkillGrade(s.name, key)} style={{ background: config.bg, color: config.color, border: '1px solid', borderColor: config.color, fontSize: '0.65rem', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>{config.label}</button>
-                                        ))}
-                                        <button onClick={() => setSkillGrade(s.name, 'NONE')} style={{ background: 'rgba(255,50,50,0.1)', color: '#ff4444', border: '1px solid #ff4444', fontSize: '0.65rem', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>REMOVE</button>
+                                        <div style={{ width: '100%', fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', fontWeight: 'bold' }}>SET PROFICIENCY GRADE</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {Object.entries(GRADES).map(([key, config]: any) => (
+                                                <button 
+                                                    key={key} 
+                                                    disabled={!config.selectable}
+                                                    onClick={() => setSkillGrade(s.name, key)} 
+                                                    style={{ 
+                                                        background: config.selectable ? config.bg : 'rgba(255,255,255,0.02)', 
+                                                        color: config.selectable ? config.color : 'rgba(255,255,255,0.1)', 
+                                                        border: '1px solid', 
+                                                        borderColor: config.selectable ? config.color : 'rgba(255,255,255,0.1)', 
+                                                        fontSize: '0.65rem', padding: '6px 10px', borderRadius: '6px', 
+                                                        cursor: config.selectable ? 'pointer' : 'not-allowed', 
+                                                        fontWeight: 'bold', flex: '1 0 45%', textAlign: 'center'
+                                                    }}
+                                                >
+                                                    {config.label}
+                                                </button>
+                                            ))}
+                                            <button onClick={() => setSkillGrade(s.name, 'NONE')} style={{ background: 'rgba(255,50,50,0.1)', color: '#ff4444', border: '1px solid #ff4444', fontSize: '0.65rem', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>REMOVE SKILL</button>
+                                        </div>
+                                        {((GRADES as any)[userSkill?.grade || 'FAKE'])?.note && (
+                                            <div style={{ marginTop: '10px', display: 'flex', gap: '6px', color: '#f59e0b', fontSize: '0.6rem' }}>
+                                                <ShieldAlert size={12} />
+                                                <span>{((GRADES as any)[userSkill?.grade]).note}</span>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 )}
                                 </AnimatePresence>

@@ -145,7 +145,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           balanceStock: { increment: task.baseReward },
           totalScore: { increment: S },
           monthlyScore: { increment: S },
-          skillLevel: newSkillLevel
+          skillLevel: newSkillLevel,
+          skills: (() => {
+             let curSkills = [];
+             try { curSkills = JSON.parse(uAny.skills || '[]'); } catch(e) { curSkills = []; }
+             // Normalize legacy strings
+             if (curSkills.length > 0 && typeof curSkills[0] === 'string') {
+                 curSkills = curSkills.map((s: string) => ({ name: s, grade: 'GRAY' }));
+             }
+             
+             const taskTags = JSON.parse(tAny.tags || '[]');
+             taskTags.forEach((tagName: string) => {
+                 const existing = curSkills.find((s: any) => s.name === tagName);
+                 if (existing) {
+                     if (existing.grade === 'GRAY') existing.grade = 'BRONZE';
+                 } else {
+                     curSkills.push({ name: tagName, grade: 'BRONZE' });
+                 }
+             });
+             return JSON.stringify(curSkills);
+          })()
         }
       }),
       prisma.user.update({
