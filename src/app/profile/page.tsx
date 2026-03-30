@@ -10,7 +10,8 @@ import {
   Brain,
   TrendingUp,
   LayoutDashboard,
-  X
+  X,
+  Calculator
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from '../page.module.css';
@@ -78,6 +79,11 @@ export default function ProfilePage() {
                   <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '4px' }}>Level 4 {currentUser.role}</div>
                </div>
             </div>
+
+            <Link href="/algorithm" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.05)' }}>
+               <Calculator size={18} color="var(--primary)" />
+               <span style={{ fontSize: '0.85rem' }}>Evaluation Docs</span>
+            </Link>
          </div>
       </aside>
 

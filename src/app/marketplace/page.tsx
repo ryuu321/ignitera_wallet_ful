@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+import { Calculator } from 'lucide-react';
 
 export default function MarketplacePage() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -30,7 +31,15 @@ export default function MarketplacePage() {
   const [showReviewModal, setShowReviewModal] = useState<any>(null); // task object
   const [showMessageModal, setShowMessageModal] = useState<any>(null); // task object
   
-  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [] as string[], expectedHours: '1.0' });
+  const [newTask, setNewTask] = useState({ 
+    title: '', 
+    description: '', 
+    baseReward: '200', 
+    position: 'GENERAL', 
+    tags: [] as string[], 
+    expectedValue: '1',
+    expectedUnit: 'h' 
+  });
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
   const [qualityScore, setQualityScore] = useState('0.9');
@@ -93,12 +102,21 @@ export default function MarketplacePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           ...newTask, 
+          expectedHours: parseFloat(newTask.expectedValue || '0'), // No multiplier as per request
           requesterId: currentUser.id,
           tags: newTask.tags
         }),
       });
       setShowModal(false);
-      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL', tags: [], expectedHours: '1.0' });
+      setNewTask({ 
+        title: '', 
+        description: '', 
+        baseReward: '200', 
+        position: 'GENERAL', 
+        tags: [], 
+        expectedValue: '1',
+        expectedUnit: 'h' 
+      });
       fetchData();
     } catch (err) { console.error(err); }
   };
@@ -231,6 +249,9 @@ export default function MarketplacePage() {
                 </button>
                 <Link href="/profile" className={styles.navItem}>
                   <User size={18} /> <span>Profile DNA</span>
+                </Link>
+                <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '5px', opacity: 0.7 }}>
+                  <Calculator size={18} color="var(--primary)" /> <span>Evaluation Docs</span>
                 </Link>
             </div>
 
@@ -432,7 +453,29 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, skillCategories }
         <FormField label="Task Title" value={newTask.title} onChange={(v:any) => setNewTask({...newTask, title: v})} />
         <FormField label="Description" value={newTask.description} onChange={(v:any) => setNewTask({...newTask, description: v})} type="textarea" />
         <FormField label="Base Reward (₲)" value={newTask.baseReward} onChange={(v:any) => setNewTask({...newTask, baseReward: v})} type="number" />
-        <FormField label="Expected Hours (h)" value={newTask.expectedHours} onChange={(v:any) => setNewTask({...newTask, expectedHours: v})} type="number" />
+        
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginBottom: '8px', textTransform: 'uppercase' }}>Expected Duration (所要時間)</label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input 
+              type="number" 
+              value={newTask.expectedValue}
+              onChange={(e) => setNewTask({...newTask, expectedValue: e.target.value})}
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px 14px', borderRadius: '8px', outline: 'none' }}
+            />
+            <select 
+              value={newTask.expectedUnit}
+              onChange={(e) => setNewTask({...newTask, expectedUnit: e.target.value})}
+              style={{ width: '100px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}
+            >
+              <option value="h">Hours (時)</option>
+              <option value="d">Days (日)</option>
+              <option value="w">Weeks (週)</option>
+              <option value="m">Months (月)</option>
+            </select>
+          </div>
+        </div>
+
         <FormField 
           label="Mission Position" 
           value={newTask.position} 
