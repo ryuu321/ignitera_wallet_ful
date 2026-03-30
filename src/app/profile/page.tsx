@@ -9,7 +9,8 @@ import {
   History, 
   Brain,
   TrendingUp,
-  LayoutDashboard
+  LayoutDashboard,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from '../page.module.css';
@@ -144,7 +145,7 @@ export default function ProfilePage() {
                       const style = colorMap[level];
 
                       return (
-                        <span key={s.name} style={{ 
+                        <span key={s.name || s} style={{ 
                           padding: '6px 14px', 
                           background: style.bg, 
                           border: `1px solid ${style.border}`, 
@@ -158,6 +159,21 @@ export default function ProfilePage() {
                           gap: '6px'
                         }}>
                           {level === 'GOLD' && '★'} {s.name || s}
+                          <button 
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              const updated = skills.filter((ms: any) => (ms.name || ms) !== (s.name || s));
+                              await fetch(`/api/users/${currentUser.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ skills: JSON.stringify(updated) })
+                              });
+                              window.location.reload();
+                            }}
+                            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', display: 'flex', alignItems: 'center', opacity: 0.6 }}
+                          >
+                            <X size={12} />
+                          </button>
                         </span>
                       );
                     })}
