@@ -9,7 +9,10 @@ import {
   ShieldAlert,
   Target,
   Zap,
-  Award
+  Award,
+  Activity,
+  History,
+  LayoutDashboard
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -73,7 +76,9 @@ export default function KPIPage() {
     }]
   };
 
-  const avg = data.avgFactors || {};
+  const avg = data.avgFactors || {
+    wu: 1, wd: 1, pc: 1, q: 1, ac: 1, aa: 1, df: 1, sf: 1, eb: 1, rr: 1
+  };
 
   return (
     <div className={styles.dashboardContainer} style={{ background: '#050511', minHeight: '100vh', color: 'white' }}>
@@ -86,9 +91,9 @@ export default function KPIPage() {
              <div style={{ padding: '15px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6366f1', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '8px' }}>
                     <ShieldAlert size={14} />
-                    <span>Audit Active</span>
+                    <span>Audit Online</span>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>Algorithm S Final Ver. Online</p>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>Algorithm S v2.0 Integrated Core</p>
              </div>
           </div>
        </aside>
@@ -96,47 +101,42 @@ export default function KPIPage() {
       <main className={styles.mainScrollArea}>
         <header className={styles.topHeader} style={{ marginBottom: '32px' }}>
           <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '900' }}>Analytics <span style={{ color: '#6366f1' }}>Intelligence</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.4)" }}>Real-time multi-dimensional evaluation monitoring v2.0</p>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '900' }}>Algorithm <span style={{ color: '#6366f1' }}>Audit</span></h1>
+            <p style={{ color: "rgba(255,255,255,0.4)" }}>Multi-layer hierarchical performance analytics</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-            {/* Row 1 */}
-            <div className="glass-card" style={{ padding: '12px 20px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>ANTI-COLLUSION (Ac)</span>
-                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: '800', color: avg.ac > 0.9 ? '#10b981' : '#f59e0b' }}>{avg.ac.toFixed(2)}</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+             {/* 8 representative factors in header */}
+            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Collusion (Ac)</span>
+                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800', color: (avg.ac || 1) > 0.9 ? '#10b981' : '#f59e0b' }}>{(avg.ac || 1).toFixed(2)}</span>
             </div>
-            <div className="glass-card" style={{ padding: '12px 20px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>UNIQUENESS (Wu)</span>
-                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: '800', color: '#6366f1' }}>{avg.wu.toFixed(2)}</span>
+            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Uniqueness (Wu)</span>
+                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800', color: '#6366f1' }}>{(avg.wu || 1).toFixed(2)}</span>
             </div>
-            <div className="glass-card" style={{ padding: '12px 20px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>D-FACTOR (Df)</span>
-                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: '800' }}>{avg.df.toFixed(2)}</span>
+            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Payload (Df)</span>
+                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800' }}>{(avg.df || 1).toFixed(2)}</span>
             </div>
-            {/* Row 2 */}
-            <div className="glass-card" style={{ padding: '12px 20px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>ACTIVITY (Aa)</span>
-                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: '800', color: '#22d3ee' }}>{avg.aa.toFixed(2)}</span>
-            </div>
-            <div className="glass-card" style={{ padding: '12px 20px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>CHALLENGE (Sf)</span>
-                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: '800', color: '#a855f7' }}>{avg.sf.toFixed(2)}</span>
-            </div>
-            <div className="glass-card" style={{ padding: '12px 20px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>RANK (Rf)</span>
-                <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: '800', color: '#fbbf24' }}>{avg.rf.toFixed(2)}</span>
+            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
+                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Rank Corr (Rr)</span>
+                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800', color: '#fbbf24' }}>{(avg.rr || 1).toFixed(3)}</span>
             </div>
           </div>
         </header>
 
         <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
             <div className="glass-card" style={{ padding: '24px', minHeight: '350px' }}>
-                <h3 style={{ marginBottom: '20px', fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>Volume Distribution by Role</h3>
+                <h3 style={{ marginBottom: '20px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                   <BarChart3 size={14} color="#6366f1" /> Capital Flux by Authority
+                </h3>
                 <div style={{ height: '250px' }}><Bar options={chartOptions} data={barData} /></div>
             </div>
 
             <div className="glass-card" style={{ padding: '24px', minHeight: '350px' }}>
-                <h3 style={{ marginBottom: '20px', fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)' }}>Earning Tier Density</h3>
+                <h3 style={{ marginBottom: '20px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                   <Users size={14} color="#a855f7" /> Performance Tier Distribution
+                </h3>
                 <div style={{ height: '250px' }}>
                     <Pie data={{
                         labels: ['S-Tier (90+)', 'A-Tier (80-90)', 'B-Tier (70-80)', 'C-Tier (<70)'],
@@ -149,19 +149,22 @@ export default function KPIPage() {
                 </div>
             </div>
 
-          {/* SYSTEM WIDE AUDIT LOG */}
+          {/* SYSTEM WIDE AUDIT LOG - FULL Spec 2.0 */}
           <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Algorithm S Real-time Audit Log</h3>
-                <span style={{ fontSize: '0.7rem', color: '#6366f1' }}>Displaying last 50 transactions</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Activity color="#6366f1" size={20} /> Hierarchical Asset Ledger
+                </h3>
+                <div style={{ fontSize: '0.65rem', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'rgba(255,255,255,0.4)' }}>
+                    Displaying last 50 transactions • 10-Factor Audit Enforced
+                </div>
             </div>
             
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', textAlign: 'left', textTransform: 'uppercase' }}>
-                    <th style={{ padding: '15px' }}>To</th>
-                    <th style={{ padding: '15px' }}>C (Net)</th>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', fontSize: '0.6rem', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    <th style={{ padding: '15px' }}>Subject</th>
                     <th style={{ padding: '15px' }}>Wu</th>
                     <th style={{ padding: '15px' }}>Wd</th>
                     <th style={{ padding: '15px' }}>Pc</th>
@@ -171,18 +174,17 @@ export default function KPIPage() {
                     <th style={{ padding: '15px' }}>Df</th>
                     <th style={{ padding: '15px' }}>Sf</th>
                     <th style={{ padding: '15px' }}>Eb</th>
-                    <th style={{ padding: '15px' }}>Rf</th>
-                    <th style={{ padding: '15px', color: 'white', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>Final S</th>
+                    <th style={{ padding: '15px', color: '#fbbf24' }}>Rr</th>
+                    <th style={{ padding: '15px', color: 'white', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>S-Result</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.transactions?.map((tx: any) => (
+                  {data.transactions?.length > 0 ? data.transactions.map((tx: any) => (
                     <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem' }}>
                       <td style={{ padding: '15px' }}>
-                        <div style={{ fontWeight: 'bold' }}>{tx.toUser?.anonymousName}</div>
+                        <div style={{ fontWeight: '900' }}>{tx.toUser?.anonymousName}</div>
                         <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>{tx.toUser?.role}</div>
                       </td>
-                      <td style={{ padding: '15px' }}>{tx.amount.toFixed(0)} ₲</td>
                       <td style={{ padding: '15px', color: '#6366f1' }}>{tx.wu?.toFixed(2)}</td>
                       <td style={{ padding: '15px', opacity: 0.5 }}>{tx.wd?.toFixed(2)}</td>
                       <td style={{ padding: '15px', opacity: 0.8 }}>{tx.pc?.toFixed(2)}</td>
@@ -192,35 +194,37 @@ export default function KPIPage() {
                       <td style={{ padding: '15px' }}>{tx.df?.toFixed(2)}</td>
                       <td style={{ padding: '15px', color: '#a855f7' }}>{tx.sf?.toFixed(2)}</td>
                       <td style={{ padding: '15px' }}>{tx.eb?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', color: '#fbbf24' }}>{tx.rf?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', fontWeight: '900', color: '#6366f1', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                      <td style={{ padding: '15px', color: '#fbbf24', fontWeight: 'bold' }}>{tx.rr?.toFixed(3)}</td>
+                      <td style={{ padding: '15px', fontWeight: '950', color: '#6366f1', borderLeft: '1px solid rgba(255,255,255,0.1)', fontSize: '0.9rem' }}>
                         {tx.finalScore?.toFixed(1)}
                       </td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr><td colSpan={12} style={{ padding: '40px', textAlign: 'center', opacity: 0.3 }}>No neural flux recorded.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* EXPLANATION CARDS */}
-          <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px' }}>
+          {/* FACTOR KEY (Updated for Spec 2.0) */}
+          <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
             <div>
-                <h4 style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}><Target size={18}/> Df & Sf</h4>
-                <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    **D-Factor** normalizes objective task payload. **Skill-Factor** rewards users attempting tasks above their current EMA mastery.
+                <h4 style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><Target size={16}/> Load Distribution (Wu/Wd)</h4>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
+                    **Wu** rewards task uniqueness. **Wd** prevents network monoculture by applying decay factors to high-frequency requester pathways.
                 </p>
             </div>
             <div>
-                <h4 style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}><Award size={18}/> R-Factor</h4>
-                <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    A 90-day persistence multiplier. High-rank users (top percentiles) gain a 10% boost; low contributors see a 10% decay.
+                <h4 style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><Award size={16}/> Rank Correction (Rr)</h4>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
+                    Competitive multiplier: `1 + 0.003 * (13 - r)`. Highest ranks receive a compound boost, maintaining the prestige of the top-tier A-D ladder.
                 </p>
             </div>
             <div>
-                <h4 style={{ color: '#22d3ee', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}><Zap size={18}/> Load Balancers</h4>
-                <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    **Aa** measures relative output vs system peer average. **Wd** prevents network fragmentation by limiting single-source reliance.
+                <h4 style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><ShieldAlert size={16}/> Collusion Shield (Ac)</h4>
+                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
+                    Proactive mitigation against mutual bidding rings. Score suppression is triggered when reciprocity or pricing anomalies exceed neural thresholds.
                 </p>
             </div>
           </div>
