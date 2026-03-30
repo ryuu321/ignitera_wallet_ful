@@ -1,12 +1,18 @@
 /**
- * Algorithm S - Rank Integrated Complete Version
+ * Integrated Algorithm S + Rank Correction (Final Spec)
  * 
- * S = C × W_u × W_d × P_c × Q × A_c × A_a × D_f × S_f × E_b × R_f
+ * S = C × W_u × W_d × P_c × Q × A_c × A_a × D_f × S_f × E_b × R_rank
  * 
- * Ref: # 評価アルゴリズム完全仕様（ランク統合・最終完全版）
+ * R_rank(r) = 1 + gamma * (mid - r)
+ * r: Rank position index (A=1, Z=26)
+ * mid: 13, gamma: 0.003
  */
 
-// 1. Core Functions
+export const RANK_LADDER = [
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+];
+
 export const clamp = (min: number, val: number, max: number): number => {
   return Math.max(min, Math.min(val, max));
 };
@@ -24,7 +30,6 @@ export const calculatePercentile = (val: number, distribution: number[]): number
   return count / distribution.length;
 };
 
-// 2. Constants
 export const POSITION_WEIGHTS: Record<string, number> = {
   'GENERAL': 1.00,
   'LEADER': 1.10,
@@ -32,27 +37,27 @@ export const POSITION_WEIGHTS: Record<string, number> = {
   'MANAGER': 1.20
 };
 
-// 3. Components
 export interface AlgorithmInputs {
   reward: number;
   cost: number;
+  
+  // Rank - for R_rank
+  rank: string; // A...Z
   
   // Wu - Uniqueness
   taskFrequency30d: number;
   frequencyDistribution30d: number[];
   
   // Wd - Distribution
-  requesterTaskCount: number;
-  totalTaskCountByAssignee: number;
   maxRequesterShare: number;
   
   // Pc - Position
-  position: 'GENERAL' | 'LEADER' | 'SPECIALIST' | 'MANAGER' | string;
+  position: string;
   
   // Q - Quality
   rating: number; // 1-5
   
-  // Ac - Anti-collusion
+  // Ac - Anti-collusion (F score items)
   samePartnerTxCount: number;
   totalTxCount: number;
   mutualTxCount: number;
@@ -69,22 +74,21 @@ export interface AlgorithmInputs {
   numBranches: number;
   numSkills: number;
   numExternal: number;
-  avgSystemDifficulty: number;
+  avgSystemDifficulty: number; // D_avg
   
   // Sf - Skill factor
-  medianPastPerformersSkill: number;
-  userSkillEMA: number;
+  medianPastPerformersSkill: number; // s_req
+  userSkillEMA: number; // s_usr
   
-  // Rf - Rank factor
-  past90dScore: number;
-  scoreDistribution90d: number[];
+  // Eb - Efficiency bonus
 }
 
 export const calculateAlgorithmS = (inputs: AlgorithmInputs) => {
-  const alpha = 0.5; // Difficulty sensitivity
-  const beta = 0.4;  // Skill challenge sensitivity
-  const gamma = 0.25; // EMA Smoothing (0.2-0.3)
-  
+  const alpha = 0.5;
+  const beta = 0.4;
+  const gamma = 0.003;
+  const midRankIdx = 13; // M Rank around middle
+
   // --- C: Coin ---
   const C = Math.max(0, inputs.reward - inputs.cost);
   
@@ -102,11 +106,10 @@ export const calculateAlgorithmS = (inputs: AlgorithmInputs) => {
   const Q = 0.8 + 0.1 * (inputs.rating - 1);
   
   // --- Ac: Anti-collusion ---
-  const r = inputs.samePartnerTxCount / Math.max(1, inputs.totalTxCount);
-  const c = inputs.mutualTxCount / Math.max(1, inputs.totalTxCount);
-  const p = Math.abs(inputs.reward - inputs.medianRewardGlobal) / Math.max(1, inputs.medianRewardGlobal);
-  
-  const F = 0.4 * r + 0.4 * c + 0.2 * p;
+  const r_coll = inputs.samePartnerTxCount / Math.max(1, inputs.totalTxCount);
+  const c_coll = inputs.mutualTxCount / Math.max(1, inputs.totalTxCount);
+  const p_coll = Math.abs(inputs.reward - inputs.medianRewardGlobal) / Math.max(1, inputs.medianRewardGlobal);
+  const F = 0.4 * r_coll + 0.4 * c_coll + 0.2 * p_coll;
   let Ac = 1.0;
   if (F >= 0.6) Ac = 0.5;
   else if (F >= 0.3) Ac = 0.8;
@@ -119,7 +122,6 @@ export const calculateAlgorithmS = (inputs: AlgorithmInputs) => {
   const X_adj = clamp(0.8, 1 + 0.3 * (inputs.actualHours / Math.max(0.1, inputs.expectedHours) - 1), 1.2);
   const X = X_base * X_adj;
   const D = inputs.actualHours * X;
-  
   const Df = clamp(1.0, 1 + alpha * ((D - inputs.avgSystemDifficulty) / Math.max(1, inputs.avgSystemDifficulty)), 1.5);
   
   // --- Sf: Skill factor ---
@@ -129,27 +131,24 @@ export const calculateAlgorithmS = (inputs: AlgorithmInputs) => {
   // --- Eb: Efficiency bonus ---
   const Eb = 1 + clamp(-0.1, 0.5 * (inputs.expectedHours / Math.max(0.1, inputs.actualHours) - 1), 0.2);
   
-  // --- Rf: Rank factor ---
-  const R = calculatePercentile(inputs.past90dScore, inputs.scoreDistribution90d);
-  const Rf = 0.9 + 0.2 * R;
+  // --- Rr: Rank Correction (New Integrated Spec) ---
+  // r is the rank position index (A=1, Z=26)
+  // Our RANK_LADDER is [A, B... Z], indexed 0 to 25.
+  // So r = index + 1
+  const r_pos = RANK_LADDER.indexOf(inputs.rank.toUpperCase()) + 1;
+  const Rr = 1 + gamma * (midRankIdx - r_pos);
   
-  // --- S: Final Score ---
-  // S = C × Wu × Wd × Pc × Q × Ac × Aa × Df × Sf × Eb × Rf
-  const finalScore = C * Wu * Wd * Pc * Q * Ac * Aa * Df * Sf * Eb * Rf;
+  // --- S: Final Integrated Score ---
+  const S = C * Wu * Wd * Pc * Q * Ac * Aa * Df * Sf * Eb * Rr;
 
   return {
-    S: finalScore,
-    components: { C, Wu, Wd, Pc, Q, Ac, Aa, Df, Sf, Eb, Rf },
-    metrics: { F, r, c, p, X_base, X_adj, X, D, R, g }
+    S,
+    components: { C, Wu, Wd, Pc, Q, Ac, Aa, Df, Sf, Eb, Rr },
+    metrics: { F, r_coll, c_coll, p_coll, X_base, X_adj, X, D, r_pos }
   };
 };
 
-/**
- * Skill Update Helper (EMA)
- * x_t = D_t * Q_t
- * EMA_t = gamma * x_t + (1 - gamma) * EMA_{t-1}
- */
-export const updateSkillEMA = (currentSkill: number, D: number, Q: number, gamma: number = 0.25): number => {
+export const updateSkillEMA = (currentSkill: number, D: number, Q: number, gamma_ema: number = 0.25): number => {
   const xt = D * Q;
-  return gamma * xt + (1 - gamma) * currentSkill;
+  return gamma_ema * xt + (1 - gamma_ema) * currentSkill;
 };

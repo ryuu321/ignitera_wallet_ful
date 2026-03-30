@@ -1,3 +1,25 @@
+# Integrated Specification: Algorithm S + Rank System
+
+## System Architecture
+```mermaid
+graph TD
+    User((User/Browser))
+    App[Next.js App Router]
+    API[Next.js API Routes]
+    Engine[Score & Rank Engine /lib]
+    DB[(PostgreSQL)]
+    Batch[Admin Batch API /api/admin/rank]
+
+    User -- Fetch Profile/Activity --> App
+    User -- Issue/Complete Task --> API
+    API -- Calculate S (Algorithm S) --> Engine
+    Engine -- Update S_month, R_rank --> DB
+    Batch -- Monthly/Season Clean --> DB
+    App -- Audit Factors (Wu-Rr) --> User
+```
+
+## Database Schema (Prisma)
+```prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,12 +35,12 @@ model User {
   role              String    @default("PLAYER")
   
   // Competitive Rank (A-Z)
-  rank              String    @default("Z") // Z(Lowest) to A(Highest)
+  rank              String    @default("Z") // Latest spec: Starts from Z
   monthlyScore      Float     @default(0.0) // S_month
   totalScore        Float     @default(0.0) // Lifetime accumulation
-  lastMonthScore    Float     @default(0.0) // Reference for promotion
-  graceMonths       Int       @default(0)   // For soft demotion (2nd month failure)
-  skillLevel        Float     @default(1.0) // EMA-based proficiency (Sf)
+  lastMonthScore    Float     @default(0.0) // For promotion/demotion checking
+  graceMonths       Int       @default(0)   // For soft demotion (2 months consecutive)
+  skillLevel        Float     @default(1.0) // EMA-based Sf
   
   balanceFlow       Float     @default(1000)
   balanceStock      Float     @default(0)
@@ -30,16 +52,15 @@ model User {
   transactionsRecv  Transaction[] @relation("ToUser")
   rankHistory       RankHistory[]
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
 }
 
 model Task {
   id                String    @id @default(uuid())
   title             String
   description       String
-  status            String    @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED
+  status            String    @default("OPEN")
   
-  // Complexity & Parameters for D_f
+  // Factors for D_f (Difficulty)
   baseReward        Float
   expectedHours     Float
   outputs           Int       @default(1)
@@ -70,9 +91,9 @@ model Transaction {
   toUser            User      @relation("ToUser", fields: [toUserId], references: [id])
   
   amount            Float     // C (Base Coin)
-  finalScore        Float     // S (Complete Integrated Score)
+  finalScore        Float     // S (Complete Score)
 
-  // Audit Logs (12 factors)
+  // Audit Logs for Algorithm S (Final Integrated Spec)
   wu                Float     // Uniqueness
   wd                Float     // Distribution
   pc                Float     // Position
@@ -82,7 +103,7 @@ model Transaction {
   df                Float     // Difficulty
   sf                Float     // Skill
   eb                Float     // Efficiency
-  rr                Float     // Rank Correction (R_rank - New)
+  rr                Float     // R_rank (Rank Correction - New)
   
   timestamp         DateTime  @default(now())
 }
@@ -91,8 +112,9 @@ model RankHistory {
   id                String    @id @default(uuid())
   userId            String
   user              User      @relation(fields: [userId], references: [id])
-  seasonId          String    // e.g., "2026-S1"
+  seasonId          String
   rank              String
   score             Float
   createdAt         DateTime  @default(now())
 }
+```
