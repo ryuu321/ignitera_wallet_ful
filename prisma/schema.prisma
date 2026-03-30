@@ -42,7 +42,7 @@ model Task {
   status            String    @default("OPEN")
   
   baseReward        Float
-  finalReward       Float     @default(0.0) // RESTORED: finalized bid amount
+  finalReward       Float     @default(0.0)
   expectedHours     Float     @default(1.0)
   outputs           Int       @default(1)
   branches          Int       @default(0)
@@ -81,10 +81,10 @@ model TaskMessage {
   id          String   @id @default(uuid())
   taskId      String
   task        Task     @relation(fields: [taskId], references: [id])
-  senderId    String
-  sender      User     @relation(fields: [senderId], references: [id])
+  userId      String   // RENAMED from senderId for legacy Comp
+  user        User     @relation(fields: [userId], references: [id]) // RENAMED from sender for legacy Comp
   content     String
-  timestamp   DateTime @default(now())
+  createdAt   DateTime @default(now()) // RENAMED from timestamp for legacy Comp
 }
 
 model Transaction {
@@ -100,7 +100,6 @@ model Transaction {
   amount            Float
   finalScore        Float     @default(0.0)
 
-  // Audit Logs (12 factors)
   wu                Float     @default(1.0)
   wd                Float     @default(1.0)
   pc                Float     @default(1.0)
