@@ -411,7 +411,7 @@ export default function MarketplacePage() {
 
       {/* Various Modals (Create, Bid, Review, Messages) */}
       <AnimatePresence>
-        {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} /></div>}
+        {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} skillCategories={skillCategories} /></div>}
         {showBidModal && <div className="modal-overlay"><BidModal task={showBidModal} onClose={() => setShowBidModal(null)} onSubmit={handlePlaceBid} newBid={newBid} setNewBid={setNewBid} /></div>}
         {showReviewModal && <div className="modal-overlay"><ReviewModal task={showReviewModal} onClose={() => setShowReviewModal(null)} onSubmit={handleCompleteTask} qualityScore={qualityScore} setQualityScore={setQualityScore} /></div>}
         {showMessageModal && <div className="modal-overlay"><MessageModal task={showMessageModal} messages={taskMessages} currentUser={currentUser} onClose={() => setShowMessageModal(null)} onSend={handleSendMessage} newMessage={newMessage} setNewMessage={setNewMessage} /></div>}
@@ -424,7 +424,7 @@ export default function MarketplacePage() {
   );
 }
 
-function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
+function CreateModal({ onClose, onSubmit, newTask, setNewTask, skillCategories }: any) {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '500px', padding: '32px' }}>
       <h2 style={{ marginBottom: '24px' }}>New Mission Parameter</h2>
@@ -445,11 +445,11 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
           ]} 
         />
         <div style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '10px' }}>
-          {Object.entries(skillCategories).map(([cat, catskills]: any) => (
+          {Object.entries(skillCategories || {}).map(([cat, catskills]: any) => (
             <div key={cat} style={{ marginBottom: '15px' }}>
               <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', textTransform: 'uppercase' }}>{cat}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {catskills.map((s: string) => {
+                {Array.isArray(catskills) && catskills.map((s: string) => {
                   const isSelected = newTask.tags.includes(s);
                   return (
                     <button 
