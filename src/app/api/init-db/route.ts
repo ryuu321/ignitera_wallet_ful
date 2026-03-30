@@ -12,26 +12,29 @@ export async function GET() {
       { 
         anonymousName: 'Vortex-Lead-99', 
         role: 'MANAGER', 
+        rank: 'Z',
         skills: JSON.stringify(['Management', 'Strategy', 'Economy']),
         balanceFlow: 5000,
         balanceStock: 1200,
-        evaluationScore: 94.2
+        totalScore: 94.2
       },
       { 
         anonymousName: 'Shadow-Mover-01', 
         role: 'PLAYER', 
+        rank: 'Z',
         skills: JSON.stringify(['AI Research', 'Python', 'Neural-Link']),
         balanceFlow: 800,
         balanceStock: 450,
-        evaluationScore: 88.5
+        totalScore: 88.5
       },
       { 
         anonymousName: 'Nova-Logic-X', 
         role: 'PLAYER', 
+        rank: 'Z',
         skills: JSON.stringify(['UI/UX', 'Framer-Motion', 'React']),
         balanceFlow: 1200,
         balanceStock: 890,
-        evaluationScore: 72.3
+        totalScore: 72.3
       },
     ];
 
