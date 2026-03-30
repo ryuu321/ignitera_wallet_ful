@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         position: position || 'GENERAL',
         tags: JSON.stringify(tags || []),
         expectedHours: parseFloat(expectedHours || '1.0'),
-      },
+      } as any,
     });
 
     return NextResponse.json(task);

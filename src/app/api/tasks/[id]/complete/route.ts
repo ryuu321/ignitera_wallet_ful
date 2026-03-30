@@ -48,11 +48,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const recentTasks = await prisma.task.findMany({
       where: { status: 'COMPLETED', updatedAt: { gte: thirtyDaysAgo } },
       select: { tags: true } as any
-    });
+    }) as any[];
     
     const tagFreqs: Record<string, number> = {};
-    recentTasks.forEach(t => {
-      const tags = JSON.parse(t.tags || '[]');
+    recentTasks.forEach((t: any) => {
+      const tags = JSON.parse((t.tags as string) || '[]');
       tags.forEach((tag: string) => {
         tagFreqs[tag] = (tagFreqs[tag] || 0) + 1;
       });
