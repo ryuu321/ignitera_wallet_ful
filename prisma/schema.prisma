@@ -13,12 +13,12 @@ model User {
   role              String    @default("PLAYER")
   
   // Competitive Rank (A-Z)
-  rank              String    @default("Z") // Z(Lowest) to A(Highest)
-  monthlyScore      Float     @default(0.0) // S_month
-  totalScore        Float     @default(0.0) // Lifetime accumulation
-  lastMonthScore    Float     @default(0.0) // Reference for promotion
-  graceMonths       Int       @default(0)   // For soft demotion (2nd month failure)
-  skillLevel        Float     @default(1.0) // EMA-based proficiency (Sf)
+  rank              String    @default("Z")
+  monthlyScore      Float     @default(0.0)
+  totalScore        Float     @default(0.0)
+  lastMonthScore    Float     @default(0.0)
+  graceMonths       Int       @default(0)
+  skillLevel        Float     @default(1.0)
   
   balanceFlow       Float     @default(1000)
   balanceStock      Float     @default(0)
@@ -26,8 +26,10 @@ model User {
   // Relationships
   tasksRequested    Task[]    @relation("RequestedBy")
   tasksAssigned     Task[]    @relation("AssignedTo")
+  bids              Bid[]
   transactionsSent  Transaction[] @relation("FromUser")
   transactionsRecv  Transaction[] @relation("ToUser")
+  messages          TaskMessage[]
   rankHistory       RankHistory[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -37,9 +39,8 @@ model Task {
   id                String    @id @default(uuid())
   title             String
   description       String
-  status            String    @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED
+  status            String    @default("OPEN")
   
-  // Complexity & Parameters for D_f
   baseReward        Float
   expectedHours     Float
   outputs           Int       @default(1)
@@ -55,9 +56,33 @@ model Task {
   requester         User      @relation("RequestedBy", fields: [requesterId], references: [id])
   assigneeId        String?
   assignee          User?     @relation("AssignedTo", fields: [assigneeId], references: [id])
+  
+  bids              Bid[]
+  messages          TaskMessage[]
   transaction       Transaction?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+model Bid {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  amount      Float
+  message     String   @default("")
+  createdAt   DateTime @default(now())
+}
+
+model TaskMessage {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  senderId    String
+  sender      User     @relation(fields: [senderId], references: [id])
+  content     String
+  timestamp   DateTime @default(now())
 }
 
 model Transaction {
@@ -69,20 +94,19 @@ model Transaction {
   toUserId          String
   toUser            User      @relation("ToUser", fields: [toUserId], references: [id])
   
-  amount            Float     // C (Base Coin)
-  finalScore        Float     // S (Complete Integrated Score)
+  amount            Float
+  finalScore        Float
 
-  // Audit Logs (12 factors)
-  wu                Float     // Uniqueness
-  wd                Float     // Distribution
-  pc                Float     // Position
-  q                 Float     // Quality
-  ac                Float     // Anti-collusion
-  aa                Float     // Activity
-  df                Float     // Difficulty
-  sf                Float     // Skill
-  eb                Float     // Efficiency
-  rr                Float     // Rank Correction (R_rank - New)
+  wu                Float
+  wd                Float
+  pc                Float
+  q                 Float
+  ac                Float
+  aa                Float
+  df                Float
+  sf                Float
+  eb                Float
+  rr                Float
   
   timestamp         DateTime  @default(now())
 }
@@ -91,7 +115,7 @@ model RankHistory {
   id                String    @id @default(uuid())
   userId            String
   user              User      @relation(fields: [userId], references: [id])
-  seasonId          String    // e.g., "2026-S1"
+  seasonId          String
   rank              String
   score             Float
   createdAt         DateTime  @default(now())
