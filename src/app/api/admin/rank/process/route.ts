@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     if (action === 'FINALIZE_SEASON') {
-      await finalizeSeason();
+      await finalizeSeason('2026-S1');
       return NextResponse.json({ message: 'Season finalized and ranks reset.' });
     }
 
