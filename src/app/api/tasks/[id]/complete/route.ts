@@ -166,6 +166,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         data: {
           balanceStock: { increment: task.baseReward },
           evaluationScore: { increment: S },
+          monthlyScore: { increment: S }, // NEW: Accumulate for ranking
           skillLevel: newSkillLevel
         }
       }),

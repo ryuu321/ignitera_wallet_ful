@@ -12,7 +12,10 @@ model User {
   anonymousName     String    @unique
   realName          String?   
   role              String    @default("PLAYER")
-  rank              String    @default("E")      // E, D, C, B, A, S
+  rank              String    @default("Z")      // Z(Lowest) to A(Highest)
+  monthlyScore      Float     @default(0.0)      // Month-to-date score accumulation
+  prevMonthlyScore  Float     @default(0.0)      // Previous month score for reference
+  graceMonths       Int       @default(0)        // Count for soft demotion (2 months consecutive)
   skillLevel        Float     @default(1.0)
   skills            String    
   balanceFlow       Float     @default(1000)

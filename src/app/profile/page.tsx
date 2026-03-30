@@ -13,7 +13,9 @@ import {
   X,
   Calculator,
   ShieldCheck,
-  Trophy
+  Trophy,
+  ArrowUpCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from '../page.module.css';
@@ -28,6 +30,14 @@ export default function ProfilePage() {
   const [showSkillInput, setShowSkillInput] = useState(false);
   const [masterSkills, setMasterSkills] = useState<any[]>([]);
 
+  // Rank Constants (Matching lib/rank.ts)
+  const RANK_LADDER = ['Z', 'Y', 'X', 'W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P', 'O', 'N', 'M', 'L', 'K', 'J', 'I', 'H', 'G', 'F', 'E', 'D', 'C', 'B', 'A'];
+  const getPromotionThreshold = (rank: string) => {
+    const n = RANK_LADDER.indexOf(rank);
+    if (n <= 0) return 0;
+    return Math.round(100 * Math.pow(1.20, n));
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -41,12 +51,10 @@ export default function ProfilePage() {
           if (found) user = found;
         }
         
-        // Fetch specific history for this user (All 11 Factors)
         const txRes = await fetch('/api/kpi'); 
         const kpiData = await txRes.json();
         const myTx = kpiData.transactions?.filter((tx: any) => tx.toUserId === user?.id) || [];
         
-        // Fetch Master Skills
         const sRes = await fetch('/api/skills');
         const sData = await sRes.json();
         setMasterSkills(sData);
@@ -64,6 +72,11 @@ export default function ProfilePage() {
   }
 
   const skills = JSON.parse(currentUser.skills || '[]');
+  const currentIdx = RANK_LADDER.indexOf(currentUser.rank || 'Z');
+  const nextRank = RANK_LADDER[currentIdx + 1];
+  const trNext = nextRank ? getPromotionThreshold(nextRank) : 0;
+  const trCurrent = getPromotionThreshold(currentUser.rank || 'Z');
+  const progressPercent = nextRank ? Math.min(100, (currentUser.monthlyScore / trNext) * 100) : 100;
 
   return (
     <div className={styles.dashboardContainer} style={{ background: '#050511', color: 'white' }}>
@@ -89,55 +102,79 @@ export default function ProfilePage() {
                <Trophy size={18} color="#fbbf24" />
                <span style={{ fontSize: '0.85rem' }}>Global Analytics</span>
             </Link>
+            
+            <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+               <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px' }}>MONTHLY CAREER RESET</div>
+               <div style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>22 Days Remaining</div>
+               <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
+                    <div style={{ width: '70%', height: '100%', background: '#6366f1' }} />
+               </div>
+            </div>
          </div>
       </aside>
 
       <main className={styles.mainScrollArea}>
         <header className={styles.topHeader} style={{ marginBottom: '32px' }}>
           <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '900' }}>Network <span style={{ color: '#6366f1' }}>DNA Profile</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.4)" }}>Multi-dimensional performance analysis for {currentUser.anonymousName}.</p>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '900' }}>Network <span style={{ color: '#6366f1' }}>Career Stats</span></h1>
+            <p style={{ color: "rgba(255,255,255,0.4)" }}>Analysis of your Z $\rightarrow$ A hierarchical progression for {currentUser.anonymousName}.</p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <div className="glass-card" style={{ padding: '15px 25px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Available Flow</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22d3ee' }}>{currentUser.balanceFlow.toFixed(0)} ₲</span>
+                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Monthly Score (S_m)</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#6366f1' }}>{currentUser.monthlyScore.toFixed(1)}</span>
             </div>
             <div className="glass-card" style={{ padding: '15px 25px', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #10b981' }}>
-                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Total Stock</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10b981' }}>{currentUser.balanceStock?.toFixed(1)} ₲</span>
+                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Lifetime S</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10b981' }}>{currentUser.evaluationScore?.toFixed(1)}</span>
             </div>
           </div>
         </header>
 
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-            {/* Core Stats */}
-            <div className="glass-card" style={{ padding: '24px' }}>
+            {/* Rank Career Module */}
+            <div className="glass-card" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '8rem', fontWeight: '900', color: 'rgba(255,255,255,0.03)', pointerEvents: 'none' }}>{currentUser.rank}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <Award color="#6366f1" />
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Algorithm S Reputation</h3>
+                    <ArrowUpCircle color="#6366f1" />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Hierarchical Ladder</h3>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '4.5rem', fontWeight: '900', color: 'white', textShadow: '0 0 20px rgba(99, 102, 241, 0.4)' }}>{currentUser.evaluationScore?.toFixed(1) || '0.0'}</div>
-                    <p style={{ fontSize: '0.8rem', color: '#6366f1', fontWeight: 'bold' }}>TOP {(100 - (currentUser.evaluationScore % 100)).toFixed(0)}% PERCENTILE</p>
+                
+                <div style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>Progress to Rank-{nextRank || 'MAX'}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{currentUser.monthlyScore.toFixed(0)} / {trNext} S</span>
+                    </div>
+                    <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden' }}>
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercent}%` }} style={{ height: '100%', background: 'linear-gradient(90deg, #6366f1, #a855f7)', boxShadow: '0 0 10px #6366f1' }} />
+                    </div>
+                    {progressPercent >= 100 ? (
+                        <div style={{ marginTop: '10px', fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <ShieldCheck size={12} /> PROMOTION ELIGIBLE (Waiting for Month End)
+                        </div>
+                    ) : (
+                        <div style={{ marginTop: '10px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>
+                            {(trNext - currentUser.monthlyScore).toFixed(0)} score required to climb.
+                        </div>
+                    )}
                 </div>
-                <div style={{ marginTop: '24px', gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '8px' }}>
-                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>Role Impact</div>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{currentUser.role}</div>
-                  </div>
-                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>Growth Rate</div>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981' }}>+12%</div>
-                  </div>
-                </div>
+
+                {currentUser.graceMonths > 0 && (
+                    <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '8px', color: '#f59e0b', fontSize: '0.75rem', display: 'flex', alignItems: 'start', gap: '10px' }}>
+                        <AlertTriangle size={16} />
+                        <div>
+                            <strong>SOFT DEMOTION ACTIVE</strong><br/>
+                            Below threshold for 1 month. Failing next month will trigger rank decay to {RANK_LADDER[currentIdx-1]}.
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Persona Indicator */}
             <div className="glass-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                     <Brain color="#a855f7" />
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Operational Persona</h3>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Operational DNA</h3>
                 </div>
                 <div style={{ position: 'relative', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginTop: '40px' }}>
                     <div style={{ position: 'absolute', top: '-25px', left: '0', fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>MAKER-MODE</div>
@@ -145,53 +182,31 @@ export default function ProfilePage() {
                     <div style={{ position: 'absolute', left: '72%', top: '-6px', width: '20px', height: '20px', background: '#a855f7', borderRadius: '50%', boxShadow: '0 0 15px #a855f7' }} />
                 </div>
                 <p style={{ marginTop: '30px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.7' }}>
-                   Profile indicates a <b>High Strategist</b> tendency. System value is driven by architectural oversight (Pc=1.20) and complex problem solving (Df=1.45+).
+                   Rank-{currentUser.rank} status identifies you as a <b>Scaling Leader</b>. Your career trajectory is accelerated by high-difficulty contributions.
                 </p>
             </div>
 
-            {/* Skills DNAtree */}
-            <div className="glass-card" style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <Zap color="#22d3ee" />
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Neural Skill Deck</h3>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {skills.map((s: any) => (
-                      <span key={s.name || s} style={{ 
-                        padding: '5px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', 
-                        color: 'rgba(255,255,255,0.8)', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold'
-                      }}>
-                        {s.name || s}
-                      </span>
-                    ))}
-                    {skills.length === 0 && <p style={{ color: 'rgba(255,255,255,0.2)' }}>No neural links detected.</p>}
-                </div>
-            </div>
-
-            {/* History Table - FULL 11 FACTORS */}
+            {/* History Table */}
             <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <History color="#6366f1" />
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Algorithm S Performance Ledger</h3>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Career Contribution Ledger</h3>
                     </div>
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>Full Audit Sync v2.0</span>
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>Algorithm S Impact History</span>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', textTransform: 'uppercase' }}>
                         <th style={{ padding: '12px' }}>Date</th>
-                        <th style={{ padding: '12px' }}>Wu (Rare)</th>
-                        <th style={{ padding: '12px' }}>Pc (Role)</th>
-                        <th style={{ padding: '12px' }}>Q (Qual)</th>
-                        <th style={{ padding: '12px' }}>Aa (Act)</th>
-                        <th style={{ padding: '12px' }}>Df (Diff)</th>
-                        <th style={{ padding: '12px' }}>Sf (Chal)</th>
-                        <th style={{ padding: '12px' }}>Eb (Eff)</th>
-                        <th style={{ padding: '12px' }}>Rf (Rank)</th>
+                        <th style={{ padding: '12px' }}>Factor Wu</th>
+                        <th style={{ padding: '12px' }}>Factor Q</th>
+                        <th style={{ padding: '12px' }}>Factor Df</th>
+                        <th style={{ padding: '12px' }}>Factor Sf</th>
+                        <th style={{ padding: '12px' }}>Factor Rf</th>
                         <th style={{ padding: '12px', color: 'white', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>Score S</th>
-                        <th style={{ padding: '12px' }}>Reward</th>
+                        <th style={{ padding: '12px' }}>Impact on Career</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -199,22 +214,16 @@ export default function ProfilePage() {
                         <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem' }}>
                           <td style={{ padding: '12px', whiteSpace: 'nowrap', opacity: 0.5 }}>{new Date(tx.timestamp).toLocaleDateString()}</td>
                           <td style={{ padding: '12px', color: '#6366f1' }}>x{tx.wu?.toFixed(2)}</td>
-                          <td style={{ padding: '12px', opacity: 0.7 }}>x{tx.pc?.toFixed(2)}</td>
                           <td style={{ padding: '12px', color: '#10b981' }}>x{tx.q?.toFixed(1)}</td>
-                          <td style={{ padding: '12px', color: '#22d3ee' }}>x{tx.aa?.toFixed(2)}</td>
                           <td style={{ padding: '12px' }}>x{tx.df?.toFixed(2)}</td>
                           <td style={{ padding: '12px', color: '#a855f7' }}>x{tx.sf?.toFixed(2)}</td>
-                          <td style={{ padding: '12px' }}>x{tx.eb?.toFixed(2)}</td>
                           <td style={{ padding: '12px', color: '#fbbf24' }}>x{tx.rf?.toFixed(2)}</td>
                           <td style={{ padding: '12px', fontWeight: '900', color: '#6366f1', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
                             {tx.finalScore?.toFixed(1)}
                           </td>
-                          <td style={{ padding: '12px', color: '#10b981', fontWeight: 'bold' }}>+{tx.amount}₲</td>
+                          <td style={{ padding: '12px', color: '#10b981' }}>+{( (tx.finalScore/trNext)*100 ).toFixed(2)}% toward Rank-{nextRank}</td>
                         </tr>
                       ))}
-                      {history.length === 0 && (
-                        <tr><td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.2)' }}>No operational footprints found. Execute missions to generate DNA.</td></tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
