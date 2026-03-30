@@ -122,11 +122,10 @@ model RankHistory {
 }
 
 model KPILog {
-  id                String    @id @default(uuid())
-  totalTransactions Int       @default(0)
-  avgQuality        Float     @default(0.0)
-  totalAmount       Float     @default(0.0)
-  timestamp         DateTime  @default(now())
+  id          String   @id @default(uuid())
+  metricName  String?  // RESTORED: compatible with legacy reset-flow API
+  value       Float?   // RESTORED: compatible with legacy reset-flow API
+  timestamp   DateTime @default(now())
 }
 
 model SkillMaster {
