@@ -21,7 +21,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    const { title, description, requesterId, baseReward } = data;
+    const { title, description, requesterId, baseReward, position } = data;
 
     const task = await prisma.task.create({
       data: {
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
         description,
         requesterId,
         baseReward: parseFloat(baseReward),
+        position: position || 'GENERAL',
       },
     });
 

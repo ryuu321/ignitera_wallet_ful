@@ -29,7 +29,7 @@ export default function MarketplacePage() {
   const [showReviewModal, setShowReviewModal] = useState<any>(null); // task object
   const [showMessageModal, setShowMessageModal] = useState<any>(null); // task object
   
-  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200' });
+  const [newTask, setNewTask] = useState({ title: '', description: '', baseReward: '200', position: 'GENERAL' });
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
   const [qualityScore, setQualityScore] = useState('0.9');
   
@@ -78,7 +78,7 @@ export default function MarketplacePage() {
         body: JSON.stringify({ ...newTask, requesterId: currentUser.id }),
       });
       setShowModal(false);
-      setNewTask({ title: '', description: '', baseReward: '200' });
+      setNewTask({ title: '', description: '', baseReward: '200', position: 'GENERAL' });
       fetchData();
     } catch (err) { console.error(err); }
   };
@@ -254,8 +254,13 @@ export default function MarketplacePage() {
                 style={{ padding: '24px', position: 'relative', display: 'flex', flexDirection: 'column' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <div className={clsx(styles.badge, styles.pulse)} style={{ background: task.status === 'OPEN' ? 'rgba(34, 211, 238, 0.1)' : 'rgba(99, 102, 241, 0.1)', color: task.status === 'OPEN' ? 'var(--accent)' : 'var(--primary)' }}>
-                    {task.status}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className={clsx(styles.badge, styles.pulse)} style={{ background: task.status === 'OPEN' ? 'rgba(34, 211, 238, 0.1)' : 'rgba(99, 102, 241, 0.1)', color: task.status === 'OPEN' ? 'var(--accent)' : 'var(--primary)' }}>
+                      {task.status}
+                    </div>
+                    <div className={styles.badge} style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      {task.position}
+                    </div>
                   </div>
                   <span style={{ color: 'var(--primary)', fontWeight: '800', fontSize: '1.2rem' }}>{task.finalReward || task.baseReward} ₲</span>
                 </div>
@@ -370,6 +375,18 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask }: any) {
         <FormField label="Task Title" value={newTask.title} onChange={(v:any) => setNewTask({...newTask, title: v})} />
         <FormField label="Description" value={newTask.description} onChange={(v:any) => setNewTask({...newTask, description: v})} type="textarea" />
         <FormField label="Base Reward (₲)" value={newTask.baseReward} onChange={(v:any) => setNewTask({...newTask, baseReward: v})} type="number" />
+        <FormField 
+          label="Mission Position" 
+          value={newTask.position} 
+          onChange={(v:any) => setNewTask({...newTask, position: v})} 
+          type="select" 
+          options={[
+            { value: 'GENERAL', label: 'General Programmer / Member (x1.0)' },
+            { value: 'SPECIALIST', label: 'Specialist / Expert (x1.1)' },
+            { value: 'SUB_MANAGER', label: 'Sub-Manager / Lead (x1.15)' },
+            { value: 'MANAGER', label: 'Manager / Project Owner (x1.2)' }
+          ]} 
+        />
         <div style={{ display: 'flex', gap: '12px', marginTop: '30px' }}>
           <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
           <button type="submit" className="neon-button" style={{ flex: 2 }}>Initialize Emission</button>
@@ -480,7 +497,7 @@ function MessageModal({ task, messages, currentUser, onClose, onSend, newMessage
   );
 }
 
-function FormField({ label, value, onChange, type = 'text' }: any) {
+function FormField({ label, value, onChange, type = 'text', options = [] }: any) {
   return (
     <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}>{label}</label>
@@ -489,6 +506,13 @@ function FormField({ label, value, onChange, type = 'text' }: any) {
           value={value} onChange={(e) => onChange(e.target.value)} 
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '12px', color: 'white', outline: 'none', minHeight: '100px' }} 
         />
+      ) : type === 'select' ? (
+        <select 
+          value={value} onChange={(e) => onChange(e.target.value)}
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '12px', color: 'white', outline: 'none' }}
+        >
+          {options.map((opt: any) => <option key={opt.value} value={opt.value} style={{ background: '#111' }}>{opt.label}</option>)}
+        </select>
       ) : (
         <input 
           type={type} value={value} onChange={(e) => onChange(e.target.value)} 
