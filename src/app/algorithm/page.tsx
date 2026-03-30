@@ -85,7 +85,7 @@ export default function AlgorithmDocs() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ borderLeft: '2px solid #ffd700', paddingLeft: '20px' }}>
                          <div style={{ fontWeight: '900', fontSize: '1rem', color: 'white' }}>Skill Grades</div>
-                         <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Mastery levels: **Basic < Bronze < Silver < Gold.** Higher grades increase your effective baseline for the **Sf** factor.</p>
+                         <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Mastery levels: **Basic &lt; Bronze &lt; Silver &lt; Gold.** Higher grades increase your effective baseline for the **Sf** factor.</p>
                     </div>
                     <FactorInfo title="Sf (Skill Factor)" desc="Rewards performing tasks above your registered grade-baseline. A 'Silver' performer taking on 'Gold' level logic receives a 1.2x boost." />
                 </div>
