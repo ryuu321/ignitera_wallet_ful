@@ -177,7 +177,7 @@ export default function KPIPage() {
                 </thead>
                 <tbody>
                   {data.transactions?.map((tx: any) => (
-                    <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem', hover: { background: 'white' } }}>
+                    <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem' }}>
                       <td style={{ padding: '15px' }}>
                         <div style={{ fontWeight: 'bold' }}>{tx.toUser?.anonymousName}</div>
                         <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>{tx.toUser?.role}</div>
