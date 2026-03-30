@@ -95,20 +95,21 @@ model Transaction {
   toUserId          String
   toUser            User      @relation("ToUser", fields: [toUserId], references: [id])
   
-  type              String    @default("PAYMENT") // RESTORED for legacy Compatibility
+  type              String    @default("PAYMENT")
   amount            Float
-  finalScore        Float
+  finalScore        Float     @default(0.0)
 
-  wu                Float
-  wd                Float
-  pc                Float
-  q                 Float
-  ac                Float
-  aa                Float
-  df                Float
-  sf                Float
-  eb                Float
-  rr                Float
+  // Audit Logs (Defaults added for legacy compatibility)
+  wu                Float     @default(1.0)
+  wd                Float     @default(1.0)
+  pc                Float     @default(1.0)
+  q                 Float     @default(1.0)
+  ac                Float     @default(1.0)
+  aa                Float     @default(1.0)
+  df                Float     @default(1.0)
+  sf                Float     @default(1.0)
+  eb                Float     @default(1.0)
+  rr                Float     @default(1.0)
   
   timestamp         DateTime  @default(now())
 }
