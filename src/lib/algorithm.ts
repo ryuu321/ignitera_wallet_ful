@@ -1,138 +1,155 @@
 /**
- * Algorithm S - Final Production Specification (v2.0)
- * behavioral evaluation logic for ecosystem health and fair reward.
+ * Algorithm S - Rank Integrated Complete Version
+ * 
+ * S = C × W_u × W_d × P_c × Q × A_c × A_a × D_f × S_f × E_b × R_f
+ * 
+ * Ref: # 評価アルゴリズム完全仕様（ランク統合・最終完全版）
  */
 
-export interface TaskComplexityParams {
-  n_o: number; // outputs
-  n_b: number; // branches
-  n_s: number; // skill_count
-  n_e: number; // external_count
+// 1. Core Functions
+export const clamp = (min: number, val: number, max: number): number => {
+  return Math.max(min, Math.min(val, max));
+};
+
+export const median = (values: number[]): number => {
+  if (!values || values.length === 0) return 1.0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+export const calculatePercentile = (val: number, distribution: number[]): number => {
+  if (!distribution || distribution.length === 0) return 0.5;
+  const count = distribution.filter(x => x < val).length;
+  return count / distribution.length;
+};
+
+// 2. Constants
+export const POSITION_WEIGHTS: Record<string, number> = {
+  'GENERAL': 1.00,
+  'LEADER': 1.10,
+  'SPECIALIST': 1.15,
+  'MANAGER': 1.20
+};
+
+// 3. Components
+export interface AlgorithmInputs {
+  reward: number;
+  cost: number;
+  
+  // Wu - Uniqueness
+  taskFrequency30d: number;
+  frequencyDistribution30d: number[];
+  
+  // Wd - Distribution
+  requesterTaskCount: number;
+  totalTaskCountByAssignee: number;
+  maxRequesterShare: number;
+  
+  // Pc - Position
+  position: 'GENERAL' | 'LEADER' | 'SPECIALIST' | 'MANAGER' | string;
+  
+  // Q - Quality
+  rating: number; // 1-5
+  
+  // Ac - Anti-collusion
+  samePartnerTxCount: number;
+  totalTxCount: number;
+  mutualTxCount: number;
+  medianRewardGlobal: number;
+  
+  // Aa - Activity
+  userTotalDifficulty: number;
+  globalAvgDifficultyPerUser: number;
+  
+  // Df - Difficulty factor
+  actualHours: number;
+  expectedHours: number;
+  numOutputs: number;
+  numBranches: number;
+  numSkills: number;
+  numExternal: number;
+  avgSystemDifficulty: number;
+  
+  // Sf - Skill factor
+  medianPastPerformersSkill: number;
+  userSkillEMA: number;
+  
+  // Rf - Rank factor
+  past90dScore: number;
+  scoreDistribution90d: number[];
 }
 
-export interface CalculationParams {
-  // Base
-  reward: number; // C_base
-  redistribution_cost: number;
+export const calculateAlgorithmS = (inputs: AlgorithmInputs) => {
+  const alpha = 0.5; // Difficulty sensitivity
+  const beta = 0.4;  // Skill challenge sensitivity
+  const gamma = 0.25; // EMA Smoothing (0.2-0.3)
   
-  // Execution Data
-  actual_hours: number; // h_act
-  expected_hours: number; // h_exp
-  rating: number; // 1-5 scale (Q_base)
+  // --- C: Coin ---
+  const C = Math.max(0, inputs.reward - inputs.cost);
   
-  // Complexity
-  complexity: TaskComplexityParams;
-  required_skill_level: number; // s_req
-  user_skill_level: number; // s_usr
+  // --- Wu: Uniqueness ---
+  const percFt = calculatePercentile(inputs.taskFrequency30d, inputs.frequencyDistribution30d);
+  const Wu = 1 + 0.5 * (1 - percFt);
   
-  // Context
-  user_role: string; // PLAYER, MANAGER, etc.
-  user_rank: string; // E, D, C, B, A, S
+  // --- Wd: Distribution ---
+  const Wd = 1 - 0.3 * inputs.maxRequesterShare;
   
-  // Statistical Inputs (for Percentile and Activity)
-  all_task_freqs_30d: number[]; 
-  t_freq: number; // frequency of current task type
-  all_activity_L: number[]; // global activity units
+  // --- Pc: Position ---
+  const Pc = POSITION_WEIGHTS[inputs.position.toUpperCase()] || 1.0;
   
-  // Collusion/Network Health
-  reliance_ratio: number; // r_d (max reliance on single requester)
-  collusion_metrics: {
-    r: number; // recurrence (same partner)
-    c: number; // closed loop
-    p: number; // price anomaly
-  };
-}
-
-export function calculateAlgorithmS(params: CalculationParams) {
-  const logs: string[] = [];
-  const log = (msg: string) => logs.push(msg);
-
-  // --- 1. Base Coin (C) ---
-  const C = Math.max(0, params.reward - params.redistribution_cost);
-  log(`C (Coin): ${C} (Reward: ${params.reward}, Cost: ${params.redistribution_cost})`);
-
-  // --- 2. Complexity (X) & Difficulty (D) ---
-  // X_base = 1 + 0.2*n_o + 0.3*n_b + 0.3*n_s + 0.5*n_e
-  const X_base = 1 + 
-    (0.2 * params.complexity.n_o) + 
-    (0.3 * params.complexity.n_b) + 
-    (0.3 * params.complexity.n_s) + 
-    (0.5 * params.complexity.n_e);
+  // --- Q: Quality ---
+  const Q = 0.8 + 0.1 * (inputs.rating - 1);
   
-  // X_adj = clamp(0.8, 1 + 0.3(h_act/h_exp - 1), 1.2)
-  const X_adj = Math.min(1.2, Math.max(0.8, 1 + 0.3 * (params.actual_hours / params.expected_hours - 1)));
+  // --- Ac: Anti-collusion ---
+  const r = inputs.samePartnerTxCount / Math.max(1, inputs.totalTxCount);
+  const c = inputs.mutualTxCount / Math.max(1, inputs.totalTxCount);
+  const p = Math.abs(inputs.reward - inputs.medianRewardGlobal) / Math.max(1, inputs.medianRewardGlobal);
   
-  const X = X_base * X_adj;
-  
-  // s = s_req / s_usr
-  const s = params.required_skill_level / params.user_skill_level;
-  
-  // D = h * s * X
-  const D = params.actual_hours * s * X;
-  log(`D (Difficulty): ${D.toFixed(3)} (X: ${X.toFixed(2)}, s: ${s.toFixed(2)}, h: ${params.actual_hours})`);
-
-  // --- 3. Reward Factors ---
-
-  // Wu: Uniqueness (Percentile based)
-  const freqs = [...params.all_task_freqs_30d].sort((a, b) => a - b);
-  const rank = freqs.indexOf(params.t_freq);
-  const percentile = freqs.length > 0 ? (rank / freqs.length) : 0;
-  const Wu = 1 + 0.5 * (1 - percentile);
-  log(`Wu (Uniqueness): ${Wu.toFixed(3)} (Percentile: ${percentile.toFixed(2)})`);
-
-  // Pc: Position
-  const Pc = params.user_role.toLowerCase() === "player" ? 1.0 : 1.15;
-  log(`Pc (Position): ${Pc} (Role: ${params.user_role})`);
-
-  // Q: Quality (0.8 + 0.1 * (rating - 1))
-  const Q = 0.8 + 0.1 * (params.rating - 1);
-  log(`Q (Quality): ${Q.toFixed(2)} (Rating: ${params.rating})`);
-
-  // Aa: Activity
-  const L = D * params.actual_hours * X; // L = D * h * X (#8)
-  const L_base = params.all_activity_L.length > 0 
-    ? params.all_activity_L.reduce((a, b) => a + b, 0) / params.all_activity_L.length 
-    : 1;
-  const Aa = 1 + 0.3 * (L / L_base);
-  log(`Aa (Activity): ${Aa.toFixed(3)} (L: ${L.toFixed(1)}, L_base: ${L_base.toFixed(1)})`);
-
-  // Rc: Rank Contribution
-  const rankMultipliers: Record<string, number> = { E: 1.0, D: 1.05, C: 1.1, B: 1.15, A: 1.2, S: 1.3 };
-  const R = rankMultipliers[params.user_rank.toUpperCase()] || 1.0;
-  const D_avg = params.all_activity_L.length > 0 ? 10.0 : 1.0; // Assuming D_avg is needed from stats
-  const D_f = 1 + 0.2 * (D - D_avg);
-  const Rc = R * D_f;
-  log(`Rc (Rank): ${Rc.toFixed(3)} (R: ${R}, D_f: ${D_f.toFixed(2)})`);
-
-  // Eb: Efficiency Bonus (clamp(-0.1, 0.5 * (h_exp/h_act - 1), 0.2))
-  const Eb_raw = 0.5 * (params.expected_hours / params.actual_hours - 1);
-  const Eb = Math.min(0.2, Math.max(-0.1, Eb_raw));
-  log(`Eb (Efficiency): ${Eb.toFixed(3)} (Raw: ${Eb_raw.toFixed(2)})`);
-
-  // --- 4. Control Factors ---
-
-  // Wd: Distribution (1 - 0.3 * r_d)
-  const Wd = 1 - 0.3 * params.reliance_ratio;
-  log(`Wd (Distribution): ${Wd.toFixed(3)} (r_d: ${params.reliance_ratio.toFixed(2)})`);
-
-  // Ac: Anti-collusion (F = 0.4r + 0.4c + 0.2p)
-  const F = (0.4 * params.collusion_metrics.r) + 
-            (0.4 * params.collusion_metrics.c) + 
-            (0.2 * params.collusion_metrics.p);
+  const F = 0.4 * r + 0.4 * c + 0.2 * p;
   let Ac = 1.0;
-  if (F < 0.3) Ac = 1.0;
-  else if (F < 0.6) Ac = 0.8;
-  else Ac = 0.5;
-  log(`Ac (Anti-collusion): ${Ac.toFixed(2)} (F: ${F.toFixed(2)})`);
-
-  // --- 5. Final Score (S) ---
-  // S = C * Wu * Wd * Pc * Q * Ac * Aa * Rc * (1 + Eb)
-  const score = C * Wu * Wd * Pc * Q * Ac * Aa * Rc * (1 + Eb);
-  log(`Final Score S: ${score.toFixed(2)}`);
+  if (F >= 0.6) Ac = 0.5;
+  else if (F >= 0.3) Ac = 0.8;
+  
+  // --- Aa: Activity ---
+  const Aa = 1 + 0.3 * Math.sqrt(inputs.userTotalDifficulty / Math.max(1, inputs.globalAvgDifficultyPerUser));
+  
+  // --- Df: Difficulty factor ---
+  const X_base = 1 + 0.2 * inputs.numOutputs + 0.3 * inputs.numBranches + 0.3 * inputs.numSkills + 0.5 * inputs.numExternal;
+  const X_adj = clamp(0.8, 1 + 0.3 * (inputs.actualHours / Math.max(0.1, inputs.expectedHours) - 1), 1.2);
+  const X = X_base * X_adj;
+  const D = inputs.actualHours * X;
+  
+  const Df = clamp(1.0, 1 + alpha * ((D - inputs.avgSystemDifficulty) / Math.max(1, inputs.avgSystemDifficulty)), 1.5);
+  
+  // --- Sf: Skill factor ---
+  const g = inputs.medianPastPerformersSkill / Math.max(0.1, inputs.userSkillEMA);
+  const Sf = clamp(0.8, 1 + beta * (g - 1), 1.2);
+  
+  // --- Eb: Efficiency bonus ---
+  const Eb = 1 + clamp(-0.1, 0.5 * (inputs.expectedHours / Math.max(0.1, inputs.actualHours) - 1), 0.2);
+  
+  // --- Rf: Rank factor ---
+  const R = calculatePercentile(inputs.past90dScore, inputs.scoreDistribution90d);
+  const Rf = 0.9 + 0.2 * R;
+  
+  // --- S: Final Score ---
+  // S = C × Wu × Wd × Pc × Q × Ac × Aa × Df × Sf × Eb × Rf
+  const finalScore = C * Wu * Wd * Pc * Q * Ac * Aa * Df * Sf * Eb * Rf;
 
   return {
-    score: Number(score.toFixed(4)),
-    factors: { C, Wu, Wd, Pc, Q, Aa, Rc, Eb, Ac, D, X },
-    logs
+    S: finalScore,
+    components: { C, Wu, Wd, Pc, Q, Ac, Aa, Df, Sf, Eb, Rf },
+    metrics: { F, r, c, p, X_base, X_adj, X, D, R, g }
   };
-}
+};
+
+/**
+ * Skill Update Helper (EMA)
+ * x_t = D_t * Q_t
+ * EMA_t = gamma * x_t + (1 - gamma) * EMA_{t-1}
+ */
+export const updateSkillEMA = (currentSkill: number, D: number, Q: number, gamma: number = 0.25): number => {
+  const xt = D * Q;
+  return gamma * xt + (1 - gamma) * currentSkill;
+};

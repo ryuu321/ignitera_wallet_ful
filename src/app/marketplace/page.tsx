@@ -462,7 +462,7 @@ export default function MarketplacePage() {
 
 function CreateModal({ onClose, onSubmit, newTask, setNewTask, skillCategories }: any) {
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '500px', padding: '32px' }}>
+    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '500px', maxHeight: '90vh', overflowY: 'auto', padding: '32px' }}>
       <h2 style={{ marginBottom: '24px' }}>New Mission Parameter</h2>
       <form onSubmit={onSubmit}>
         <FormField label="Task Title" value={newTask.title} onChange={(v:any) => setNewTask({...newTask, title: v})} />
@@ -578,7 +578,7 @@ function BidModal({ task, onClose, onSubmit, newBid, setNewBid }: any) {
 
 function ReviewModal({ task, onClose, onSubmit, qualityScore, setQualityScore }: any) {
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '450px', padding: '32px' }}>
+    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '450px', maxHeight: '90vh', overflowY: 'auto', padding: '32px' }}>
       <h3 style={{ marginBottom: '10px' }}>Mission Review</h3>
       <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginBottom: '24px' }}>Review performance for <b>{task.assignee?.anonymousName}</b></p>
       <form onSubmit={onSubmit}>

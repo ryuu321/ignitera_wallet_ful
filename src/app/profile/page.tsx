@@ -11,7 +11,9 @@ import {
   TrendingUp,
   LayoutDashboard,
   X,
-  Calculator
+  Calculator,
+  ShieldCheck,
+  Trophy
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import styles from '../page.module.css';
@@ -39,7 +41,7 @@ export default function ProfilePage() {
           if (found) user = found;
         }
         
-        // Fetch specific history for this user
+        // Fetch specific history for this user (All 11 Factors)
         const txRes = await fetch('/api/kpi'); 
         const kpiData = await txRes.json();
         const myTx = kpiData.transactions?.filter((tx: any) => tx.toUserId === user?.id) || [];
@@ -58,274 +60,160 @@ export default function ProfilePage() {
   }, []);
 
   if (loading || !currentUser) {
-     return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050510', color: 'var(--primary)' }}>Syncing Neural Profile...</div>;
+     return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050510', color: '#6366f1' }}>Syncing Neural Profile...</div>;
   }
 
   const skills = JSON.parse(currentUser.skills || '[]');
 
   return (
-    <div className={styles.dashboardContainer}>
+    <div className={styles.dashboardContainer} style={{ background: '#050511', color: 'white' }}>
       <aside className={styles.sidebar}>
          <Link href="/" className={styles.logoSection} style={{ textDecoration: 'none' }}>
-            <div className={styles.logoIcon}><ArrowLeft size={20} color="var(--primary)" /></div>
-            <span className={styles.logoText}>Back to Home</span>
+            <div className={styles.logoIcon}><ArrowLeft size={20} color="#6366f1" /></div>
+            <span className={styles.logoText}>Back to Hub</span>
          </Link>
          
          <div style={{ marginTop: '30px', padding: '10px' }}>
-            <div className={clsx("glass-card", styles.userProfileSummary)} style={{ padding: '20px', border: '1px solid var(--primary)' }}>
-               <div className={styles.avatar} style={{ width: '60px', height: '60px', fontSize: '1.5rem' }}>{currentUser.anonymousName[0]}</div>
+            <div className={clsx("glass-card", styles.userProfileSummary)} style={{ padding: '20px', border: '1px solid #6366f1' }}>
+               <div className={styles.avatar} style={{ width: '64px', height: '64px', fontSize: '1.8rem', background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>{currentUser.anonymousName[0]}</div>
                <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{currentUser.anonymousName}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--primary)', marginTop: '4px' }}>Level 4 {currentUser.role}</div>
+                  <div style={{ fontWeight: '900', fontSize: '1.3rem' }}>{currentUser.anonymousName}</div>
+                  <div style={{ fontSize: '0.8rem', color: '#6366f1', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <ShieldCheck size={14} />
+                    <span>RANK-{currentUser.rank} / LV.{(currentUser.skillLevel || 1.0).toFixed(1)}</span>
+                  </div>
                </div>
             </div>
 
-            <Link href="/algorithm" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.05)' }}>
-               <Calculator size={18} color="var(--primary)" />
-               <span style={{ fontSize: '0.85rem' }}>Evaluation Docs</span>
+            <Link href="/kpi" style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+               <Trophy size={18} color="#fbbf24" />
+               <span style={{ fontSize: '0.85rem' }}>Global Analytics</span>
             </Link>
          </div>
       </aside>
 
       <main className={styles.mainScrollArea}>
-        <header className={styles.topHeader}>
+        <header className={styles.topHeader} style={{ marginBottom: '32px' }}>
           <div>
-            <h1>Player <span className="gradient-text">DNA Profile</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.5)" }}>Detailed behavioral analysis and asset distribution for {currentUser.anonymousName}.</p>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '900' }}>Network <span style={{ color: '#6366f1' }}>DNA Profile</span></h1>
+            <p style={{ color: "rgba(255,255,255,0.4)" }}>Multi-dimensional performance analysis for {currentUser.anonymousName}.</p>
           </div>
-          <div className={styles.balancePill}>
-            <span className={styles.flowPill}>Flow: {currentUser.balanceFlow} ₲</span>
-            <span className={styles.stockPill}>Stock: {currentUser.balanceStock?.toFixed(1)} ₲</span>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="glass-card" style={{ padding: '15px 25px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Available Flow</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22d3ee' }}>{currentUser.balanceFlow.toFixed(0)} ₲</span>
+            </div>
+            <div className="glass-card" style={{ padding: '15px 25px', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #10b981' }}>
+                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Total Stock</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10b981' }}>{currentUser.balanceStock?.toFixed(1)} ₲</span>
+            </div>
           </div>
         </header>
 
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
             {/* Core Stats */}
             <div className="glass-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <Award color="var(--primary)" />
-                    <h3 style={{ fontSize: '1.1rem' }}>Accumulated Score (S)</h3>
+                    <Award color="#6366f1" />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Algorithm S Reputation</h3>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '3.5rem', fontWeight: '900', color: 'white' }}>{currentUser.evaluationScore?.toFixed(1) || '0.0'}</div>
-                    <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)' }}>Top 12% in Global Ranking</p>
+                    <div style={{ fontSize: '4.5rem', fontWeight: '900', color: 'white', textShadow: '0 0 20px rgba(99, 102, 241, 0.4)' }}>{currentUser.evaluationScore?.toFixed(1) || '0.0'}</div>
+                    <p style={{ fontSize: '0.8rem', color: '#6366f1', fontWeight: 'bold' }}>TOP {(100 - (currentUser.evaluationScore % 100)).toFixed(0)}% PERCENTILE</p>
                 </div>
-                <div style={{ marginTop: '20px', display: 'flex', gap: '8px' }}>
-                  <div style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>Trust Factor</div>
-                    <div style={{ fontWeight: 'bold' }}>0.98</div>
+                <div style={{ marginTop: '24px', gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '8px' }}>
+                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>Role Impact</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{currentUser.role}</div>
                   </div>
-                  <div style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>Reliability</div>
-                    <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>High</div>
+                  <div style={{ padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>Growth Rate</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#10b981' }}>+12%</div>
                   </div>
                 </div>
             </div>
 
-            {/* Hybrid Indicator */}
+            {/* Persona Indicator */}
             <div className="glass-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <Brain color="var(--accent)" />
-                    <h3 style={{ fontSize: '1.1rem' }}>Operational Persona</h3>
+                    <Brain color="#a855f7" />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Operational Persona</h3>
                 </div>
-                <div style={{ position: 'relative', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', marginTop: '40px' }}>
-                    <div style={{ position: 'absolute', top: '-25px', left: '0', fontSize: '0.7rem' }}>PLAYER-DRIVEN</div>
-                    <div style={{ position: 'absolute', top: '-25px', right: '0', fontSize: '0.7rem' }}>MANAGER-DRIVEN</div>
-                    <div style={{ position: 'absolute', left: '60%', top: '-5px', width: '20px', height: '20px', background: 'var(--accent)', borderRadius: '50%', boxShadow: '0 0 15px var(--accent)', transform: 'translate(-50%, -2px)' }} />
+                <div style={{ position: 'relative', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginTop: '40px' }}>
+                    <div style={{ position: 'absolute', top: '-25px', left: '0', fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>MAKER-MODE</div>
+                    <div style={{ position: 'absolute', top: '-25px', right: '0', fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)' }}>STRATEGIST-MODE</div>
+                    <div style={{ position: 'absolute', left: '72%', top: '-6px', width: '20px', height: '20px', background: '#a855f7', borderRadius: '50%', boxShadow: '0 0 15px #a855f7' }} />
                 </div>
-                <p style={{ marginTop: '30px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', lineHeight: '1.6' }}>
-                   Current stance reflects a <b>60% Managerial</b> tendency. You are valued for coordinating complex projects while maintaining high technical quality.
+                <p style={{ marginTop: '30px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.7' }}>
+                   Profile indicates a <b>High Strategist</b> tendency. System value is driven by architectural oversight (Pc=1.20) and complex problem solving (Df=1.45+).
                 </p>
             </div>
 
-            {/* Skills */}
+            {/* Skills DNAtree */}
             <div className="glass-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <Zap color="var(--secondary)" />
-                    <h3 style={{ fontSize: '1.1rem' }}>Identified Skill DNA</h3>
+                    <Zap color="#22d3ee" />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800' }}>Neural Skill Deck</h3>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {skills.map((s: any) => {
-                      const level = s.level || 'GRAY';
-                      const colorMap: any = {
-                        GRAY: { bg: 'rgba(255,255,255,0.05)', text: 'rgba(255,255,255,0.4)', border: 'rgba(255,255,255,0.1)', shadow: 'none' },
-                        BRONZE: { bg: 'rgba(205, 127, 50, 0.1)', text: '#cd7f32', border: '#cd7f32', shadow: '0 0 10px rgba(205, 127, 50, 0.2)' },
-                        SILVER: { bg: 'rgba(192, 192, 192, 0.1)', text: '#c0c0c0', border: '#c0c0c0', shadow: '0 0 10px rgba(192, 192, 192, 0.2)' },
-                        GOLD: { bg: 'rgba(255, 215, 0, 0.1)', text: '#ffd700', border: '#ffd700', shadow: '0 0 15px rgba(255, 215, 0, 0.4)' }
-                      };
-                      const style = colorMap[level];
-
-                      return (
-                        <span key={s.name || s} style={{ 
-                          padding: '6px 14px', 
-                          background: style.bg, 
-                          border: `1px solid ${style.border}`, 
-                          color: style.text, 
-                          borderRadius: '20px', 
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold',
-                          boxShadow: style.shadow,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}>
-                          {level === 'GOLD' && '★'} {s.name || s}
-                          <button 
-                            onClick={async (e) => {
-                              e.preventDefault();
-                              const updated = skills.filter((ms: any) => (ms.name || ms) !== (s.name || s));
-                              await fetch(`/api/users/${currentUser.id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ skills: JSON.stringify(updated) })
-                              });
-                              window.location.reload();
-                            }}
-                            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', display: 'flex', alignItems: 'center', opacity: 0.6 }}
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      );
-                    })}
-                    {skills.length === 0 && <p style={{ color: 'rgba(255,255,255,0.2)' }}>No skills documented.</p>}
-                </div>
-                
-                <div style={{ marginTop: '20px' }}>
-                  {!showSkillInput ? (
-                    <button 
-                      onClick={() => setShowSkillInput(true)}
-                      style={{ background: 'none', border: '1px dashed rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.4)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}
-                    >
-                      + Add Self-Applied Skill (Gray)
-                    </button>
-                  ) : (
-                    <div style={{ position: 'relative' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input 
-                          type="text" 
-                          autoFocus
-                          value={newSkill}
-                          onChange={(e) => setNewSkill(e.target.value)}
-                          placeholder="Search skills (e.g. Next.js)..."
-                          style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '10px 14px', borderRadius: '8px', outline: 'none', fontSize: '0.85rem' }}
-                        />
-                        <button 
-                          onClick={() => { setShowSkillInput(false); setNewSkill(''); }}
-                          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '0.8rem' }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-
-                      {newSkill && (
-                        <div className="glass-card" style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 10, maxHeight: '250px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', padding: '10px' }}>
-                          {masterSkills
-                            .filter(s => s.name.toLowerCase().includes(newSkill.toLowerCase()) && !skills.some((ms: any) => (ms.name || ms) === s.name))
-                            .map(s => (
-                              <button
-                                key={s.id}
-                                onClick={async () => {
-                                  const updated = [...skills, { name: s.name, level: 'GRAY' }];
-                                  await fetch(`/api/users/${currentUser.id}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ skills: JSON.stringify(updated) })
-                                  });
-                                  window.location.reload();
-                                }}
-                                style={{
-                                  width: '100%',
-                                  padding: '10px',
-                                  textAlign: 'left',
-                                  background: 'none',
-                                  border: 'none',
-                                  color: 'white',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  fontSize: '0.85rem',
-                                  transition: 'background 0.2s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                              >
-                                {s.name} <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginLeft: '10px' }}>{s.category}</span>
-                              </button>
-                            ))
-                          }
-                          {masterSkills.filter(s => s.name.toLowerCase().includes(newSkill.toLowerCase())).length === 0 && (
-                            <button 
-                              onClick={async () => {
-                                // 1. Create globally
-                                const res = await fetch('/api/skills', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ name: newSkill, category: 'General' })
-                                });
-                                const createdSkill = await res.json();
-                                
-                                // 2. Add to profile
-                                if (createdSkill.name) {
-                                  const updated = [...skills, { name: createdSkill.name, level: 'GRAY' }];
-                                  await fetch(`/api/users/${currentUser.id}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ skills: JSON.stringify(updated) })
-                                  });
-                                  window.location.reload();
-                                }
-                              }}
-                              style={{ width: '100%', padding: '12px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', border: '1px dashed rgba(16, 185, 129, 0.3)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}
-                            >
-                              + Create & Add New Skill: "{newSkill}"
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {skills.map((s: any) => (
+                      <span key={s.name || s} style={{ 
+                        padding: '5px 12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', 
+                        color: 'rgba(255,255,255,0.8)', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold'
+                      }}>
+                        {s.name || s}
+                      </span>
+                    ))}
+                    {skills.length === 0 && <p style={{ color: 'rgba(255,255,255,0.2)' }}>No neural links detected.</p>}
                 </div>
             </div>
 
-            {/* History Table */}
-            <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                    <History color="rgba(255,255,255,0.5)" />
-                    <h3 style={{ fontSize: '1.1rem' }}>Personal Mission Ledger <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginLeft: '10px' }}>Algorithm S Metrics</span></h3>
+            {/* History Table - FULL 11 FACTORS */}
+            <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <History color="#6366f1" />
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Algorithm S Performance Ledger</h3>
+                    </div>
+                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>Full Audit Sync v2.0</span>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>
-                        <th style={{ padding: '12px' }}>Timestamp</th>
-                        <th style={{ padding: '12px' }}>Role (Pc)</th>
-                        <th style={{ padding: '12px' }}>Uniqueness (Wu)</th>
-                        <th style={{ padding: '12px' }}>Eff. Bonus (Eb)</th>
-                        <th style={{ padding: '12px' }}>Quality (Q)</th>
-                        <th style={{ padding: '12px' }}>Distribution (Wd)</th>
-                        <th style={{ padding: '12px' }}>Collusion (Ac)</th>
-                        <th style={{ padding: '12px', color: 'white' }}>Score (S)</th>
+                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '12px' }}>Date</th>
+                        <th style={{ padding: '12px' }}>Wu (Rare)</th>
+                        <th style={{ padding: '12px' }}>Pc (Role)</th>
+                        <th style={{ padding: '12px' }}>Q (Qual)</th>
+                        <th style={{ padding: '12px' }}>Aa (Act)</th>
+                        <th style={{ padding: '12px' }}>Df (Diff)</th>
+                        <th style={{ padding: '12px' }}>Sf (Chal)</th>
+                        <th style={{ padding: '12px' }}>Eb (Eff)</th>
+                        <th style={{ padding: '12px' }}>Rf (Rank)</th>
+                        <th style={{ padding: '12px', color: 'white', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>Score S</th>
                         <th style={{ padding: '12px' }}>Reward</th>
                       </tr>
                     </thead>
                     <tbody>
                       {history.map((tx) => (
-                        <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.85rem' }}>
-                          <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>{new Date(tx.timestamp).toLocaleDateString()}</td>
-                          <td style={{ padding: '12px' }}>x{tx.pc?.toFixed(2) || '1.0'}</td>
-                          <td style={{ padding: '12px', color: 'var(--primary)' }}>x{tx.wu?.toFixed(2) || '1.0'}</td>
-                          <td style={{ padding: '12px', color: (tx.eb || 0) >= 0 ? 'var(--success)' : 'var(--error)' }}>
-                            { (tx.eb || 0) >= 0 ? '+' : '' }{(tx.eb || 0).toFixed(2)}
+                        <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem' }}>
+                          <td style={{ padding: '12px', whiteSpace: 'nowrap', opacity: 0.5 }}>{new Date(tx.timestamp).toLocaleDateString()}</td>
+                          <td style={{ padding: '12px', color: '#6366f1' }}>x{tx.wu?.toFixed(2)}</td>
+                          <td style={{ padding: '12px', opacity: 0.7 }}>x{tx.pc?.toFixed(2)}</td>
+                          <td style={{ padding: '12px', color: '#10b981' }}>x{tx.q?.toFixed(1)}</td>
+                          <td style={{ padding: '12px', color: '#22d3ee' }}>x{tx.aa?.toFixed(2)}</td>
+                          <td style={{ padding: '12px' }}>x{tx.df?.toFixed(2)}</td>
+                          <td style={{ padding: '12px', color: '#a855f7' }}>x{tx.sf?.toFixed(2)}</td>
+                          <td style={{ padding: '12px' }}>x{tx.eb?.toFixed(2)}</td>
+                          <td style={{ padding: '12px', color: '#fbbf24' }}>x{tx.rf?.toFixed(2)}</td>
+                          <td style={{ padding: '12px', fontWeight: '900', color: '#6366f1', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                            {tx.finalScore?.toFixed(1)}
                           </td>
-                          <td style={{ padding: '12px' }}>x{tx.q?.toFixed(2) || '1.0'}</td>
-                          <td style={{ padding: '12px', opacity: 0.6 }}>{tx.wd?.toFixed(2) || '1.0'}</td>
-                          <td style={{ padding: '12px', color: (tx.ac || 1) < 1 ? 'var(--accent)' : 'inherit' }}>{tx.ac?.toFixed(2) || '1.0'}</td>
-                          <td style={{ padding: '12px', fontWeight: 'bold', color: 'white' }}>{tx.finalScore?.toFixed(1) || '0.0'}</td>
-                          <td style={{ padding: '12px', color: 'var(--success)', whiteSpace: 'nowrap' }}>+{tx.amount} ₲</td>
+                          <td style={{ padding: '12px', color: '#10b981', fontWeight: 'bold' }}>+{tx.amount}₲</td>
                         </tr>
                       ))}
                       {history.length === 0 && (
-                        <tr><td colSpan={9} style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.2)' }}>No personal records found.</td></tr>
+                        <tr><td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.2)' }}>No operational footprints found. Execute missions to generate DNA.</td></tr>
                       )}
                     </tbody>
                   </table>
