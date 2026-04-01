@@ -253,7 +253,7 @@ export default function Marketplace() {
 
         <nav style={{ display: 'flex', gap: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '40px' }}>
            <TabItem active={view === 'browse'} onClick={() => setView('browse')} text="案件をさがす" color={rankColor} />
-           <TabItem active={view === 'my-issued'} onClick={() => setView('my-issued'} text="発行した案件" color={rankColor} />
+           <TabItem active={view === 'my-issued'} onClick={() => setView('my-issued')} text="発行した案件" color={rankColor} />
            <TabItem active={view === 'my-bids'} onClick={() => setView('my-bids')} text="入札中の案件" color={rankColor} />
         </nav>
 
