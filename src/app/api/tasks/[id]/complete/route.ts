@@ -175,7 +175,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       prisma.user.update({
         where: { id: task.assigneeId },
         data: {
-          balanceStock: { increment: task.baseReward },
+          balanceStock: { increment: task.finalReward || task.baseReward },
           totalScore: { increment: S },
           monthlyScore: { increment: S },
           skillLevel: newSkillLevel,
