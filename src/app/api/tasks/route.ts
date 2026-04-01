@@ -25,25 +25,58 @@ export async function POST(req: Request) {
       requiredSkill, outputs, branches, skillCount, externalCount
     } = data;
 
-    const task = await prisma.task.create({
-      data: {
-        title,
-        description,
-        requesterId,
-        baseReward: parseFloat(baseReward),
-        position: position || 'GENERAL',
-        tags: JSON.stringify(tags || []),
-        expectedHours: parseFloat(expectedHours || '1.0'),
-        requiredSkill: parseFloat(requiredSkill || '1.0'),
-        outputs: parseInt(outputs || '1'),
-        branches: parseInt(branches || '0'),
-        skillCount: parseInt(skillCount || '1'),
-        externalCount: parseInt(externalCount || '0'),
-      } as any,
+    const rewardNum = parseFloat(baseReward);
+    
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: requesterId }
+      });
+
+      if (!user) throw new Error('User not found');
+
+      let newFlow = user.balanceFlow;
+      let newStock = user.balanceStock;
+      
+      if (newFlow >= rewardNum) {
+        // Enough Flow
+        newFlow -= rewardNum;
+      } else {
+        // Deficit: Take all flow, take remaining from stock
+        const deficit = rewardNum - newFlow;
+        if (newStock < deficit) throw new Error('Insufficient balance (Flow + Stock combined)');
+        newFlow = 0;
+        newStock -= deficit;
+      }
+
+      // Update User
+      await tx.user.update({
+        where: { id: requesterId },
+        data: { balanceFlow: newFlow, balanceStock: newStock }
+      });
+
+      // Create Task
+      return await tx.task.create({
+        data: {
+          title,
+          description,
+          requesterId,
+          baseReward: rewardNum,
+          position: position || 'GENERAL',
+          tags: Array.isArray(tags) ? JSON.stringify(tags) : (tags || "[]"),
+          expectedHours: parseFloat(expectedHours || '1.0'),
+          requiredSkill: parseFloat(requiredSkill || '1.0'),
+          outputs: parseInt(outputs || '1'),
+          branches: parseInt(branches || '0'),
+          skillCount: parseInt(skillCount || '1'),
+          externalCount: parseInt(externalCount || '0'),
+        } as any,
+        include: { requester: true }
+      });
     });
 
-    return NextResponse.json(task);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+    return NextResponse.json(result);
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: error.message || 'Failed to create task' }, { status: 400 });
   }
 }
