@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Search, Briefcase, Filter, ArrowLeft, Target, ShieldCheck, Zap, X, Send, History, Award, LayoutDashboard, User, BarChart3, Settings, Calculator, MessageSquare, Clock, MapPin, CheckCircle2, TrendingUp, AlertCircle, ChevronRight, Layers, Cpu, Brain, Rocket, Star
+  Plus, Search, Briefcase, Filter, ArrowLeft, Target, ShieldCheck, Zap, X, Send, History, Award, LayoutDashboard, User, BarChart3, Settings, Calculator, MessageSquare, Clock, MapPin, CheckCircle2, TrendingUp, AlertCircle, ChevronRight, Layers, Cpu, Brain, Rocket, Star, PlusCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
@@ -80,8 +80,9 @@ export default function Marketplace() {
         body: JSON.stringify({ 
           ...newTask, 
           expectedHours: hours,
-          requesterId: currentUser.id, 
-          tags: JSON.stringify(newTask.tags) 
+          requesterId: currentUser.id,
+          // DON'T stringify here, let API handle it
+          tags: newTask.tags 
         }),
       });
       if (res.ok) {
@@ -251,7 +252,6 @@ export default function Marketplace() {
                 <h3 style={{ fontSize: '1.4rem', fontWeight: '900', marginBottom: '12px', letterSpacing: '-0.5px' }}>{task.title}</h3>
                 <p style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '28px' }}>{task.description}</p>
                 
-                {/* Expose 4 Items & Deadline & Skills */}
                 <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.02)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                         <MetricItem icon={<Clock size={14} />} label="推定納期" value={`${task.expectedHours} ${task.expectedUnit || 'h'}`} />
@@ -262,9 +262,18 @@ export default function Marketplace() {
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
                         <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', letterSpacing: '1px' }}>REQUIRED_SKILLSETS</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            {JSON.parse(task.tags || '[]').map((tag: string) => (
-                                <span key={tag} style={{ padding: '4px 10px', background: `${rankColor}15`, color: rankColor, borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', border: `1px solid ${rankColor}30` }}>{tag}</span>
-                            ))}
+                            {(() => {
+                              try {
+                                const tags = typeof task.tags === 'string' ? JSON.parse(task.tags) : (task.tags || []);
+                                // Double check if it's still a string (escaped JSON case)
+                                const finalTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+                                return finalTags.map((tag: string) => (
+                                  <span key={tag} style={{ padding: '4px 10px', background: `${rankColor}15`, color: rankColor, borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', border: `1px solid ${rankColor}30` }}>{tag}</span>
+                                ));
+                              } catch(e) { 
+                                return <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem' }}>スキル設定なし</span>; 
+                              }
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -284,7 +293,6 @@ export default function Marketplace() {
                     )}
                   </div>
 
-                  {/* Auction Landscape */}
                   {task.status !== 'COMPLETED' && task.bids?.length > 0 && (
                     <div style={{ marginTop: '15px', padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                        <div>
@@ -297,7 +305,6 @@ export default function Marketplace() {
                     </div>
                   )}
 
-                  {/* Actions */}
                   <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                      {(task.requesterId === currentUser?.id || task.assigneeId === currentUser?.id) && (
                         <button className={styles.quickActionBtn} style={{ flex: 1 }} onClick={() => { setShowMessageModal(task); fetchMessages(task.id); }}>
@@ -324,7 +331,6 @@ export default function Marketplace() {
                      )}
                   </div>
 
-                  {/* Incoming Bids Review (Issued View) */}
                   {view === 'my-issued' && task.status === 'BIDDING' && task.bids?.length > 0 && (
                      <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {task.bids.map((bid: any) => (
@@ -346,7 +352,7 @@ export default function Marketplace() {
       </main>
 
       <AnimatePresence>
-        {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} masterSkills={masterSkills} color={rankColor} /></div>}
+        {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} masterSkills={masterSkills} color={rankColor} refreshSkills={fetchData} /></div>}
         {showBidModal && <div className="modal-overlay"><BidModal task={showBidModal} onClose={() => setShowBidModal(null)} onSubmit={handlePlaceBid} newBid={newBid} setNewBid={setNewBid} color={rankColor} /></div>}
         {showReviewModal && <div className="modal-overlay"><ReviewModal task={showReviewModal} onClose={() => setShowReviewModal(null)} onSubmit={handleCompleteTask} qualityScore={qualityScore} setQualityScore={setQualityScore} color={rankColor} /></div>}
         {showMessageModal && <div className="modal-overlay"><MessageModal task={showMessageModal} messages={taskMessages} currentUser={currentUser} onClose={() => setShowMessageModal(null)} onSend={handleSendMessage} newMessage={newMessage} setNewMessage={setNewMessage} color={rankColor} /></div>}
@@ -380,10 +386,29 @@ function MetricItem({ icon, label, value }: any) {
     );
 }
 
-function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, color }: any) {
+function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, color, refreshSkills }: any) {
+  const [newTagInput, setNewTagInput] = useState('');
+
   const toggleSkill = (name: string) => {
     const next = newTask.tags.includes(name) ? newTask.tags.filter((t: string) => t !== name) : [...newTask.tags, name];
     setNewTask({...newTask, tags: next});
+  };
+
+  const handleAddNewTag = async () => {
+    if (!newTagInput.trim()) return;
+    try {
+      // 1. Create skill in Master database
+      const res = await fetch('/api/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTagInput.trim(), category: 'GENERAL' })
+      });
+      if (res.ok) {
+        setNewTask({...newTask, tags: [...newTask.tags, newTagInput.trim()]});
+        setNewTagInput('');
+        refreshSkills();
+      }
+    } catch(e) { console.error(e); }
   };
 
   return (
@@ -420,6 +445,19 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, col
 
         <div style={{ marginBottom: '32px' }}>
             <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '900', letterSpacing: '1px' }}>必要スキル・マトリクス</label>
+            
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <input 
+                  value={newTagInput} 
+                  onChange={(e) => setNewTagInput(e.target.value)} 
+                  placeholder="新しいスキルを追加..." 
+                  style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 15px', color: 'white', fontSize: '0.85rem' }} 
+                />
+                <button type="button" onClick={handleAddNewTag} style={{ padding: '0 15px', background: `${color}20`, border: `1px solid ${color}30`, color, borderRadius: '10px', cursor: 'pointer' }}>
+                   <PlusCircle size={18} />
+                </button>
+            </div>
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
                 {masterSkills.map((s: any) => (
                     <button key={s.id} type="button" onClick={() => toggleSkill(s.name)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid', borderColor: newTask.tags.includes(s.name) ? color : 'rgba(255,255,255,0.1)', background: newTask.tags.includes(s.name) ? `${color}20` : 'transparent', color: newTask.tags.includes(s.name) ? 'white' : 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: '0.2s' }}>
