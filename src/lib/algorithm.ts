@@ -8,10 +8,7 @@
  * mid: 13, gamma: 0.003
  */
 
-export const RANK_LADDER = [
-  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
-];
+import { RANK_LADDER } from './rank';
 
 export const clamp = (min: number, val: number, max: number): number => {
   return Math.max(min, Math.min(val, max));
@@ -135,7 +132,7 @@ export const calculateAlgorithmS = (inputs: AlgorithmInputs) => {
   // r is the rank position index (A=1, Z=26)
   // Our RANK_LADDER is [A, B... Z], indexed 0 to 25.
   // So r = index + 1
-  const r_pos = RANK_LADDER.indexOf(inputs.rank.toUpperCase()) + 1;
+  const r_pos = RANK_LADDER.slice().reverse().indexOf(inputs.rank.toUpperCase()) + 1;
   const Rr = 1 + gamma * (midRankIdx - r_pos);
   
   // --- S: Final Integrated Score ---
