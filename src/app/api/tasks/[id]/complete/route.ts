@@ -39,7 +39,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
     const tagFreqs: Record<string, number> = {};
     recentCompletedTasks.forEach(t => {
-      const tags = JSON.parse(t.tags || '[]');
+      let tags = [];
+      try {
+        const parsed = JSON.parse(t.tags || '[]');
+        tags = Array.isArray(parsed) ? parsed : [];
+      } catch(e) { tags = []; }
       tags.forEach((tag: string) => tagFreqs[tag] = (tagFreqs[tag] || 0) + 1);
     });
     let taskTags = [];
