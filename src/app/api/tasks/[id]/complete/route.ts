@@ -75,14 +75,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const allRecentRecentTxs = await prisma.transaction.findMany({
        where: { timestamp: { gte: thirtyDaysAgo } },
        select: { df: true, toUserId: true }
-    });
+    } as any) as any[];
     const userLoads: Record<string, number> = {};
-    allRecentRecentTxs.forEach(tx => userLoads[tx.toUserId] = (userLoads[tx.toUserId] || 0) + (tx.df || 0));
+    allRecentRecentTxs.forEach(tx => userLoads[tx.toUserId] = (userLoads[tx.toUserId] || 0) + (tx.df || 1.0));
     const userTotalDiff = userLoads[task.assigneeId] || 0;
     const globalAvgDiffPerUser = Object.values(userLoads).length > 0 ? 
       Object.values(userLoads).reduce((a, b) => a + b, 0) / Object.values(userLoads).length : 1.0;
     const avgSystemDifficulty = allRecentRecentTxs.length > 0 ? 
-      allRecentRecentTxs.reduce((a, b) => a + (b.df || 0), 0) / allRecentRecentTxs.length : 1.0;
+      allRecentRecentTxs.reduce((a, b) => a + (b.df || 1.0), 0) / allRecentRecentTxs.length : 1.0;
 
     // [Sf] Skill Factor
     const performerSkillRecords = (await prisma.user.findMany({
@@ -166,8 +166,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           rawFrequency: currentTaskFreq,
           rawMaxShare: maxReqShare,
           timestamp: now
-        } as any
-      }),
+        }
+      } as any),
       prisma.task.update({
         where: { id: taskId },
         data: { status: 'COMPLETED' }

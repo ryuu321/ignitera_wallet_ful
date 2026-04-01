@@ -23,14 +23,14 @@ export const getRankCorrection = (rank: string) => {
  * 月次締め処理 (月を進めるシミュレーション)
  */
 export const finalizeMonth = async () => {
-  const users = await prisma.user.findMany();
+  const users = await prisma.user.findMany() as any[];
   
   for (const user of users) {
     // ランク維持の判定などは複雑なため、現状はスコアのスライドとFlowリセットを優先
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        lastMonthScore: user.monthlyScore,
+        lastMonthScore: user.monthlyScore || 0,
         monthlyScore: 0,
         balanceFlow: 1000, // 月次の発行可能枠を再付与
         graceMonths: 0 
@@ -41,7 +41,7 @@ export const finalizeMonth = async () => {
     await prisma.kPILog.create({
       data: {
         metricName: `MONTHLY_FINALIZE_${user.anonymousName}`,
-        value: user.monthlyScore,
+        value: user.monthlyScore || 0,
         timestamp: new Date()
       }
     });
@@ -52,7 +52,7 @@ export const finalizeMonth = async () => {
  * シーズン締め処理
  */
 export const finalizeSeason = async (seasonId: string) => {
-  const users = await prisma.user.findMany();
+  const users = await prisma.user.findMany() as any[];
   
   for (const user of users) {
     // 履歴を保存
@@ -61,7 +61,7 @@ export const finalizeSeason = async (seasonId: string) => {
         userId: user.id,
         seasonId,
         rank: user.rank,
-        score: user.totalScore
+        score: user.totalScore || 0
       }
     });
     
