@@ -1,7 +1,7 @@
 # Production Dockerfile for Ignitera Wallet
 
 # 1. Base image
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # 2. Build stage
 FROM base AS builder
