@@ -363,7 +363,7 @@ function TabItem({ active, onClick, text, color }: any) {
     return (
         <button onClick={onClick} style={{ height: '50px', background: 'none', border: 'none', color: active ? 'white' : 'rgba(255,255,255,0.4)', fontSize: '1rem', fontWeight: '900', cursor: 'pointer', position: 'relative', transition: '0.3s' }}>
             {text}
-            {active && <motion.div layoutId="market-tab" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '3px', background: color, shadow: `0 0 10px ${color}` }} />}
+            {active && <motion.div layoutId="market-tab" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '3px', background: color, boxShadow: `0 0 10px ${color}` }} />}
         </button>
     );
 }
