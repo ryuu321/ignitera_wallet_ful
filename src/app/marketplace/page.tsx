@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Search, Briefcase, Filter, ArrowLeft, Target, ShieldCheck, Zap, X, Send, History, Award, LayoutDashboard, User, BarChart3, Settings, Calculator, MessageSquare, Clock, MapPin, CheckCircle2, TrendingUp, AlertCircle, ChevronRight, Layers, Cpu, Brain, Rocket, Star, PlusCircle
+  Plus, Search, Briefcase, Filter, ArrowLeft, Target, ShieldCheck, Zap, X, Send, History, Award, LayoutDashboard, User, BarChart3, Settings, Calculator, MessageSquare, Clock, MapPin, CheckCircle2, TrendingUp, AlertCircle, ChevronRight, Layers, Cpu, Brain, Rocket, Star, PlusCircle, ExternalLink, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
@@ -21,6 +21,7 @@ export default function Marketplace() {
   const [showBidModal, setShowBidModal] = useState<any>(null);
   const [showReviewModal, setShowReviewModal] = useState<any>(null);
   const [showMessageModal, setShowMessageModal] = useState<any>(null);
+  const [showCandidateProfile, setShowCandidateProfile] = useState<any>(null);
   
   const [masterSkills, setMasterSkills] = useState<any[]>([]);
   const [newTask, setNewTask] = useState({
@@ -81,7 +82,6 @@ export default function Marketplace() {
           ...newTask, 
           expectedHours: hours,
           requesterId: currentUser.id,
-          // DON'T stringify here, let API handle it
           tags: newTask.tags 
         }),
       });
@@ -265,7 +265,6 @@ export default function Marketplace() {
                             {(() => {
                               try {
                                 const tags = typeof task.tags === 'string' ? JSON.parse(task.tags) : (task.tags || []);
-                                // Double check if it's still a string (escaped JSON case)
                                 const finalTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
                                 return finalTags.map((tag: string) => (
                                   <span key={tag} style={{ padding: '4px 10px', background: `${rankColor}15`, color: rankColor, borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', border: `1px solid ${rankColor}30` }}>{tag}</span>
@@ -332,16 +331,64 @@ export default function Marketplace() {
                   </div>
 
                   {view === 'my-issued' && task.status === 'BIDDING' && task.bids?.length > 0 && (
-                     <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {task.bids.map((bid: any) => (
-                           <div key={bid.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <div>
-                                 <div style={{ fontSize: '0.9rem', fontWeight: '900' }}>{bid.bidder.anonymousName} <span style={{ color: rankColor, marginLeft: '8px' }}>₲{bid.amount}</span></div>
-                                 <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>{bid.message}</div>
-                              </div>
-                              <button onClick={() => handleAcceptBid(task.id, bid.id)} style={{ background: rankColor, color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold' }}>採用</button>
-                           </div>
-                        ))}
+                     <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>候補者一覧 ({task.bids.length})</div>
+                        {task.bids.map((bid: any) => {
+                           const bColor = getRankColor(bid.bidder.rank);
+                           return (
+                             <motion.div 
+                               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                               key={bid.id} 
+                               className="glass-card"
+                               style={{ padding: '24px', borderLeft: `4px solid ${bColor}`, background: 'rgba(255,255,255,0.02)' }}
+                             >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${bColor}20`, border: `1px solid ${bColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: bColor, fontSize: '1.1rem' }}>
+                                         {bid.bidder.rank}
+                                      </div>
+                                      <div>
+                                         <div style={{ fontWeight: '900', fontSize: '1rem' }}>{bid.bidder.anonymousName}</div>
+                                         <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', display: 'flex', gap: '10px', marginTop: '2px' }}>
+                                            <span>M-Score: {bid.bidder.monthlyScore?.toFixed(0)}</span>
+                                            <span>Skill: {bid.bidder.skillLevel?.toFixed(1)}</span>
+                                         </div>
+                                      </div>
+                                   </div>
+                                   <div style={{ textAlign: 'right' }}>
+                                      <div style={{ fontWeight: '950', fontSize: '1.2rem', color: bColor }}>₲{bid.amount}</div>
+                                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)' }}>PROPOSED_UNIT</div>
+                                   </div>
+                                </div>
+
+                                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', marginBottom: '4px' }}>
+                                   {bid.message || 'ミッション実行プロトコル未記述'}
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>
+                                   <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', marginBottom: '6px', letterSpacing: '0.5px' }}>HOLDER_SKILLSETS</div>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                         {(() => {
+                                           try {
+                                             const bSkills = JSON.parse(bid.bidder.skills || '[]');
+                                             return bSkills.slice(0, 3).map((s: any) => (
+                                               <span key={s.name} style={{ fontSize: '0.65rem', padding: '2px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'rgba(255,255,255,0.5)' }}>{s.name}</span>
+                                             ));
+                                           } catch(e) { return null; }
+                                         })()}
+                                      </div>
+                                   </div>
+                                   <button 
+                                     onClick={() => handleAcceptBid(task.id, bid.id)} 
+                                     style={{ background: bColor, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 24px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold', boxShadow: `0 4px 15px ${bColor}30` }}
+                                   >
+                                      採用する
+                                   </button>
+                                </div>
+                             </motion.div>
+                           );
+                        })}
                      </div>
                   )}
                 </div>
@@ -397,7 +444,6 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, col
   const handleAddNewTag = async () => {
     if (!newTagInput.trim()) return;
     try {
-      // 1. Create skill in Master database
       const res = await fetch('/api/skills', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
