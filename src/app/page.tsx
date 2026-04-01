@@ -9,6 +9,7 @@ import styles from './page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
 import { getRankColor } from '@/lib/colors';
+import { RANK_LADDER, getPromotionThreshold } from '@/lib/rank';
 
 export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -167,16 +168,27 @@ export default function Dashboard() {
                 </h3>
                 <div style={{ padding: '20px', background: 'rgba(0,0,0,0.2)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)' }}>
                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', letterSpacing: '1px' }}>現在のランク進捗</div>
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '1.8rem', fontWeight: '950', lineHeight: 1 }}>{currentUser.rank}</span>
-                      <span style={{ fontSize: '1.1rem', fontWeight: '900', color: rankColor }}>{currentUser.monthlyScore?.toFixed(0)} <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>/ 1,000 PTS</span></span>
-                   </div>
-                   <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', overflow: 'hidden' }}>
-                      <motion.div 
-                        initial={{ width: 0 }} animate={{ width: `${Math.min(100, (currentUser.monthlyScore/1000)*100)}%` }} 
-                        style={{ height: '100%', background: `linear-gradient(90deg, ${rankColor}, ${rankColor}80)`, boxShadow: `0 0 10px ${rankColor}40` }} 
-                      />
-                   </div>
+                   {(() => {
+                      const currentIdx = RANK_LADDER.indexOf(currentUser.rank || 'Z');
+                      const nextRank = RANK_LADDER[currentIdx + 1];
+                      const threshold = nextRank ? getPromotionThreshold(nextRank) : 1000;
+                      const progress = Math.min(100, (currentUser.monthlyScore / threshold) * 100);
+                      
+                      return (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '12px' }}>
+                             <span style={{ fontSize: '1.8rem', fontWeight: '950', lineHeight: 1 }}>{currentUser.rank}</span>
+                             <span style={{ fontSize: '1.1rem', fontWeight: '900', color: rankColor }}>{currentUser.monthlyScore?.toFixed(0)} <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>/ {threshold} PTS</span></span>
+                          </div>
+                          <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', overflow: 'hidden' }}>
+                             <motion.div 
+                               initial={{ width: 0 }} animate={{ width: `${progress}%` }} 
+                               style={{ height: '100%', background: `linear-gradient(90deg, ${rankColor}, ${rankColor}80)`, boxShadow: `0 0 10px ${rankColor}40` }} 
+                             />
+                          </div>
+                        </>
+                      );
+                   })()}
                    <div style={{ marginTop: '12px', textAlign: 'right', fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>
                       次期昇格予測: 4月20日前後
                    </div>

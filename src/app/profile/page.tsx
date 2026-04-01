@@ -9,6 +9,7 @@ import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
 import { getRankColor } from '@/lib/colors';
+import { RANK_LADDER, getPromotionThreshold, getRankCorrection } from '@/lib/rank';
 
 const GRADES: any = {
   GRAY: { color: '#94a3b8', label: 'Basic (自己申告)', bg: 'rgba(148, 163, 184, 0.1)', selectable: true },
@@ -27,17 +28,6 @@ export default function ProfilePage() {
   
   const [newSkillName, setNewSkillName] = useState('');
   const [selectedSkillNode, setSelectedSkillNode] = useState<string | null>(null);
-
-  const RANK_LADDER = ['Z', 'Y', 'X', 'W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P', 'O', 'N', 'M', 'L', 'K', 'J', 'I', 'H', 'G', 'F', 'E', 'D', 'C', 'B', 'A'];
-  const getPromotionThreshold = (rank: string) => {
-    const n = RANK_LADDER.indexOf(rank);
-    if (n <= 0) return 0;
-    return Math.round(100 * Math.pow(1.20, n));
-  };
-  const getRankCorrection = (rank: string) => {
-    const r_pos = RANK_LADDER.slice().reverse().indexOf(rank.toUpperCase()) + 1;
-    return 1 + 0.003 * (13 - r_pos);
-  };
 
   const fetchData = async () => {
     try {
