@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       await tx.transaction.create({
         data: {
           fromUserId: userId,
-          toUserId: 'SYSTEM_EXPENSE', // System account for tracking expenses
+          toUserId: userId, // Internal accounting (self-expense)
           type: 'IGN_EXPENSE',
           amount: spendAmount,
           finalScore: 0

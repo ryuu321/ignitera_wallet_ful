@@ -72,15 +72,69 @@ export default function Dashboard() {
 
         <div style={{ flex: 1 }} />
 
-        <div style={{ padding: '24px', margin: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
-            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', letterSpacing: '1.5px', fontWeight: '900' }}>DEMO_OPERATOR</div>
+        <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '15px', letterSpacing: '1px', fontWeight: '900' }}>NEURAL_WALLET</div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+               <BalanceItem label="FLOW" value={currentUser.balanceFlow} unit="₲" color={rankColor} description="今月の発行可能予算" />
+               <BalanceItem label="STOCK" value={currentUser.balanceStock} unit="₲" color="#10b981" description="生涯蓄積・業務投資資産" />
+               <BalanceItem label="IGN" value={currentUser.balanceIgn} unit="𝒾" color="#fbbf24" description="社内アメニティ・経費用" />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                <button 
+                    onClick={async () => {
+                        const amount = prompt('IGN に換金する Stock の額を入力してください (1:1 換金):', '10');
+                        if (amount && !isNaN(parseFloat(amount))) {
+                            const res = await fetch('/api/exchange/stock-to-ign', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: currentUser.id, amount })
+                            });
+                            if (res.ok) { window.location.reload(); alert('IGN への換金が完了しました。'); }
+                            else { const err = await res.json(); alert(`エラー: ${err.error}`); }
+                        }
+                    }}
+                    style={{ flex: 1, padding: '10px', background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.3)', borderRadius: '10px', color: '#fbbf24', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                    IGN換金
+                </button>
+                <button 
+                    onClick={async () => {
+                        const amount = prompt('IGN を使用する額を入力してください:', '5');
+                        if (amount && !isNaN(parseFloat(amount))) {
+                            const desc = prompt('使用用途を入力してください (例: カフェラテ, 席料):', 'アメニティ利用');
+                            const res = await fetch('/api/expenses', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: currentUser.id, amount, category: 'GENERAL', description: desc })
+                            });
+                            if (res.ok) { window.location.reload(); alert('IGN の支払いが完了しました。'); }
+                            else { const err = await res.json(); alert(`エラー: ${err.error}`); }
+                        }
+                    }}
+                    style={{ flex: 1, padding: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                    IGN支払
+                </button>
+            </div>
+
+            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>デモ・オペレーター切替</div>
             <select 
               value={currentUser.id} 
               onChange={(e) => handleUserChange(e.target.value)}
-              style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer' }}
+              style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', marginBottom: '15px' }}
             >
               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#0a0a0f' }}>{u.anonymousName} (Rank {u.rank})</option>)}
             </select>
+            <button 
+                onClick={async () => {
+                    if (confirm('システム時間（月）を進めますか？発行残高のリセット等が行われます。')) {
+                        const res = await fetch('/api/simulate/next-month', { method: 'POST' });
+                        if (res.ok) { window.location.reload(); alert('翌月のシミュレーションが完了しました。'); }
+                    }
+                }}
+                style={{ width: '100%', padding: '10px', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: '8px', color: '#6366f1', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                <History size={12} style={{ marginRight: '6px' }} /> 月を進める (Simulation)
+             </button>
         </div>
       </aside>
 
@@ -293,3 +347,19 @@ function ActionLink({ icon, text, sub, href }: any) {
     </Link>
   );
 }
+
+function BalanceItem({ label, value, unit, color, description }: any) {
+    return (
+        <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4px' }}>
+               <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: '900' }}>{label}</span>
+               <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+                  <span style={{ fontSize: '0.65rem', color, fontWeight: 'bold' }}>{unit}</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: '950', color, lineHeight: 1 }}>{value?.toLocaleString() || '0'}</span>
+               </div>
+            </div>
+            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)' }}>{description}</div>
+        </div>
+    );
+}
+
