@@ -1,59 +1,51 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  TrendingUp, 
-  Target, 
-  Zap, 
-  ArrowUpRight, 
-  Users, 
-  ShieldAlert, 
-  Activity, 
   LayoutDashboard, 
   Briefcase, 
   BarChart3, 
-  Settings,
-  User,
-  ChevronRight,
+  User, 
+  Settings, 
+  Search, 
+  Bell, 
+  TrendingUp, 
+  Activity, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  Plus, 
+  CheckCircle2, 
+  Clock, 
+  Zap,
+  Target,
   History,
-  Plus,
   Award,
   Crown,
   Calculator
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+import { getRankColor } from '@/lib/colors';
 
-export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [users, setUsers] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
-        const [uRes, tRes] = await Promise.all([
-          fetch('/api/users'),
-          fetch('/api/tasks')
-        ]);
-        const uData = await uRes.json();
-        const tData = await tRes.json();
+        const uRes = await fetch('/api/users');
+        const data = await uRes.json();
+        setUsers(data);
         
-        const savedUserId = localStorage.getItem('demo-user-id');
-        let targetUser = uData[0];
-        if (savedUserId) {
-          const found = uData.find((u: any) => u.id === savedUserId);
-          if (found) targetUser = found;
-        }
-        setCurrentUser(targetUser);
-        setUsers(uData);
-        setTasks(tData);
+        const savedId = localStorage.getItem('demo-user-id');
+        const user = savedId ? data.find((u: any) => u.id === savedId) : data[0];
+        setCurrentUser(user || data[0]);
       } catch (err) {
-        console.error('Failed to fetch dashboard data', err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -62,45 +54,38 @@ export default function DashboardPage() {
   }, []);
 
   const handleUserChange = (id: string) => {
-    const found = users.find(u => u.id === id);
-    if (found) {
-      setCurrentUser(found);
+    const user = users.find(u => u.id === id);
+    if (user) {
+      setCurrentUser(user);
       localStorage.setItem('demo-user-id', id);
     }
   };
 
-  if (loading) {
-     return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050510', color: '#6366f1' }}>Connecting to Ignitera Network...</div>;
+  if (loading || !currentUser) {
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050510', color: '#6366f1' }}>Synchronizing Neural Core...</div>;
   }
 
-  if (!currentUser) {
-    return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#050510', color: 'white', gap: '20px' }}>
-        <h2>Core Inactive</h2>
-        <p style={{ color: 'rgba(255,255,255,0.5)' }}>No neural records found. Initialize database to begin.</p>
-        <Link href="/settings" className="neon-button" style={{ textDecoration: 'none' }}>Go to Settings</Link>
-      </div>
-    );
-  }
+  const rankColor = getRankColor(currentUser.rank);
 
   return (
-    <div className={styles.dashboardContainer} style={{ background: '#050511', color: 'white' }}>
+    <div 
+      className={styles.dashboardContainer} 
+      style={{ 
+        '--primary': rankColor,
+        background: `radial-gradient(circle at 0% 0%, ${rankColor}10, transparent 40%), #050511` 
+      } as React.CSSProperties}
+    >
       <aside className={styles.sidebar}>
         <div className={styles.logoSection}>
-          <div className={clsx(styles.logoIcon, "float")}>
-            <Zap size={24} fill="#6366f1" color="#6366f1" />
-          </div>
-          <span className={styles.logoText}>Ignitera Hub</span>
+          <div className={styles.logoIcon} style={{ background: rankColor }}><Zap size={14} color="white" /></div>
+          <span className={styles.logoText}>Ignitera <span style={{ color: rankColor }}>OS</span></span>
         </div>
 
         <nav className={styles.navMenu}>
-          <button 
-            className={clsx(styles.navItem, activeTab === 'dashboard' && styles.navItemActive)}
-            onClick={() => setActiveTab('dashboard')}
-          >
+          <Link href="/" className={clsx(styles.navItem, styles.navItemActive)}>
             <LayoutDashboard size={20} />
             <span>Overview</span>
-          </button>
+          </Link>
           <Link href="/marketplace" className={styles.navItem}>
             <Briefcase size={20} />
             <span>Marketplace</span>
@@ -118,7 +103,7 @@ export default function DashboardPage() {
             <span>Settings</span>
           </Link>
           <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px', opacity: 0.8 }}>
-            <Calculator size={20} color="#6366f1" />
+            <Calculator size={20} color={rankColor} />
             <span style={{ fontSize: '0.85rem' }}>Evaluation Docs</span>
           </Link>
         </nav>
@@ -135,138 +120,149 @@ export default function DashboardPage() {
               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName} (RANK-{u.rank})</option>)}
             </select>
         </div>
-
-        <div className={styles.userProfileSummary} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px' }}>
-          <div className={styles.avatar} style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>{currentUser.anonymousName[0]}</div>
-          <div className={styles.pInfo}>
-            <span className={styles.pName} style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{currentUser.anonymousName}</span>
-            <span className={styles.pRole} style={{ color: '#fed7aa', fontSize: '0.7rem' }}>RANK-{currentUser.rank} / {currentUser.role}</span>
-          </div>
-        </div>
       </aside>
 
       <main className={styles.mainScrollArea}>
-        <header className={styles.topHeader} style={{ marginBottom: '40px' }}>
-          <div>
-            <h1 style={{ fontSize: '2.4rem', fontWeight: '950', letterSpacing: '-1px' }}>Welcome, <span style={{ color: '#6366f1' }}>{currentUser.anonymousName}</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '0.95rem' }}>Organizational flux monitoring for the current fiscal cycle.</p>
+        <header className={styles.topHeader}>
+          <div className={styles.headerTitle}>
+            <h1>Career <span style={{ color: rankColor }}>Nexus</span></h1>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>Hierarchical status: {currentUser.rank} / Competitive Layer</p>
           </div>
-          <div className={styles.headerRight}>
-            <div className={styles.balancePill} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 20px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <span style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: 'bold' }}>Flow: {(currentUser?.balanceFlow || 0).toLocaleString()} ₲</span>
-              <div style={{ width: '1px', height: '15px', background: 'rgba(255,255,255,0.1)', margin: '0 15px' }} />
-              <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 'bold' }}>Stock: {(currentUser?.balanceStock || 0).toLocaleString()} ₲</span>
+          <div className={styles.headerActions}>
+            <div className={styles.searchBar}>
+              <Search size={18} />
+              <input type="text" placeholder="Scan protocols..." />
+            </div>
+            <div className={styles.iconBtn}><Bell size={20} /></div>
+            <div className={styles.avatarBorder} style={{ borderColor: rankColor }}>
+               <div className={styles.avatar} style={{ background: `linear-gradient(135deg, ${rankColor}, #000)` }}>{currentUser.anonymousName[0]}</div>
             </div>
           </div>
         </header>
 
-        {activeTab === 'dashboard' && (
-          <motion.section 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className={styles.statsRow}>
-              <StatCard 
-                title="Career Rank" 
-                value={`RANK-${currentUser.rank}`} 
-                icon={<Crown size={24} color="#fbbf24" />} 
-                trend="TOP 12%" 
-                label="Competition Ladder" 
-              />
-              <StatCard 
-                title="Algorithm S Score" 
-                value={currentUser.totalScore?.toFixed(1) || '0.0'} 
-                icon={<Target size={24} color="#6366f1" />} 
-                trend="±0.4" 
-                label="Integrated Performance" 
-              />
-              <StatCard 
-                title="Skill Mastery (Sf)" 
-                value={currentUser.skillLevel?.toFixed(2) || '1.00'} 
-                icon={<Activity size={24} color="#a855f7" />} 
-                trend="EMA Opt" 
-                label="Mastery Factor" 
-              />
-              <StatCard 
-                title="Grace Window" 
-                value={`${currentUser.graceMonths}M`} 
-                icon={<ShieldAlert size={24} color="#f59e0b" />} 
-                label="Demotion Shield" 
-              />
-            </div>
+        <div className={styles.statsGrid}>
+          <StatCard 
+            title="Flow Balance" 
+            value={`${currentUser.balanceFlow} ₲`} 
+            trend="+12% Volatility" 
+            icon={<Zap size={20} color={rankColor} />}
+            color={rankColor}
+            desc="Monthly allocation for strategic emission."
+          />
+          <StatCard 
+            title="Stock Value" 
+            value={`${currentUser.balanceStock?.toFixed(1)} ₲`} 
+            trend="Settled Asset" 
+            icon={<Target size={20} color="#10b981" />} 
+            color="#10b981"
+            desc="Liquidated performance rewards."
+          />
+          <StatCard 
+            title="Algorithm S Score" 
+            value={`${currentUser.totalScore?.toFixed(1) || '0.0'}`} 
+            trend={`Rank: ${currentUser.rank}`} 
+            icon={<Award size={20} color="#fbbf24" />} 
+            color="#fbbf24"
+            desc="Normalized multi-factor evaluation."
+          />
+        </div>
 
-            <div className={styles.lowerGrid}>
-              <div className={clsx("glass-card", styles.activeTasks)}>
-                <div className={styles.cardHeader}>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '900' }}>Flux Marketplace</h3>
-                  <Link href="/marketplace" className={styles.textBtn} style={{ color: '#6366f1', fontSize: '0.8rem', fontWeight: 'bold' }}>View All →</Link>
-                </div>
-                <div className={styles.taskList} style={{ marginTop: '20px' }}>
-                  {tasks.slice(0, 4).map((t) => (
-                    <div key={t.id} className={styles.taskItem} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '16px 0' }}>
-                      <div className={clsx(styles.statusDot, t.status === 'OPEN' ? styles.statusDotOpen : styles.statusDotInProgress)} />
-                      <div className={styles.taskInfo}>
-                        <span className={styles.taskTitle} style={{ fontWeight: 'bold' }}>{t.title}</span>
-                        <span className={styles.taskBy} style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>Requested by {t.requester?.anonymousName}</span>
-                      </div>
-                      <div className={styles.taskReward} style={{ color: '#6366f1', fontWeight: '900' }}>
-                        {t.baseReward} ₲
-                      </div>
-                    </div>
-                  ))}
-                  {tasks.length === 0 && <p style={{ padding: '20px', textAlign: 'center', opacity: 0.3 }}>No active fluctuations found.</p>}
-                </div>
-              </div>
-
-              <div className={clsx("glass-card", styles.kpiPreview)}>
-                <div className={styles.cardHeader}>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '900' }}>Capital Persistence</h3>
-                  <div className={clsx(styles.badge, styles.pulse)} style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#6366f1' }}>Live Neural Link</div>
-                </div>
-                <div style={{ marginTop: '30px' }}>
-                    <div style={{ fontSize: '1.8rem', fontWeight: '950' }}>{currentUser.totalScore?.toFixed(1)} <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>PTS S</span></div>
-                    <div style={{ marginTop: '15px', height: '80px', display: 'flex', alignItems: 'flex-end', gap: '4px' }}>
-                         {[40, 70, 45, 90, 65, 80, 50].map((v, i) => (
-                             <div key={i} style={{ flex: 1, background: i === 5 ? '#6366f1' : 'rgba(255,255,255,0.05)', height: `${v}%`, borderRadius: '2px' }} />
-                         ))}
-                    </div>
-                    <div style={{ marginTop: '20px', display: 'flex', gap: '20px' }}>
-                        <div>
-                            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>R_RANK BONUS</div>
-                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fbbf24' }}>Active (x1.04)</div>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>AUDIT STATUS</div>
-                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#10b981' }}>PASS (Ac=1.0)</div>
-                        </div>
-                    </div>
-                </div>
-              </div>
+        <section className={styles.contentSection}>
+          <div className={styles.mainContent}>
+            <div className={styles.sectionHeader}>
+               <h2>Mission Feed</h2>
+               <div className={styles.filterTabs}>
+                  <button className={styles.filterTabActive}>Recent</button>
+                  <button className={styles.filterTab}>High Reward</button>
+               </div>
             </div>
-          </motion.section>
-        )}
+            
+            <div className={styles.missionList}>
+               <MissionItem title="Neural Network Optimization" reward="500" complexity="D_f: 1.2" time="2h rem" color={rankColor} />
+               <MissionItem title="Market Liquidity Rebalance" reward="320" complexity="D_f: 0.85" time="5h rem" color="#10b981" />
+               <MissionItem title="Strategic Growth Audit" reward="850" complexity="D_f: 1.45" time="1d rem" color="#a855f7" />
+            </div>
+          </div>
+
+          <aside className={styles.rightPanel}>
+             <div className="glass-card" style={{ padding: '24px', marginBottom: '24px', border: `1px solid ${rankColor}30` }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '15px', color: rankColor }}>Career Trajectory</h3>
+                <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                   <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginBottom: '5px' }}>Current Monthly Rank Progress</div>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                      <span>Rank {currentUser.rank}</span>
+                      <span style={{ color: rankColor }}>{currentUser.monthlyScore?.toFixed(0)} PTS</span>
+                   </div>
+                   <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginTop: '10px', overflow: 'hidden' }}>
+                      <motion.div 
+                        initial={{ width: 0 }} 
+                        animate={{ width: `${Math.min(100, (currentUser.monthlyScore/1000)*100)}%` }} 
+                        style={{ height: '100%', background: rankColor }} 
+                      />
+                   </div>
+                </div>
+             </div>
+
+             <div className="glass-card" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '1rem', marginBottom: '15px' }}>Rapid Actions</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                   <QuickAction icon={<Briefcase size={16} />} text="Browse Marketplace" link="/marketplace" />
+                   <QuickAction icon={<User size={16} />} text="Update Profile DNA" link="/profile" />
+                   <QuickAction icon={<History size={16} />} text="Ledger History" link="/kpi" />
+                </div>
+             </div>
+          </aside>
+        </section>
       </main>
     </div>
   );
 }
 
-function StatCard({ title, value, icon, trend, label }: any) {
+function StatCard({ title, value, trend, icon, color, desc }: any) {
   return (
-    <div className={clsx("glass-card", styles.statCard)} style={{ padding: '24px' }}>
-      <div className={styles.statHeader} style={{ marginBottom: '20px' }}>
-        <span className={styles.statLabel} style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{title}</span>
-        <div className={styles.statIconWrapper} style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '12px' }}>{icon}</div>
+    <motion.div 
+      whileHover={{ y: -5 }}
+      className="glass-card" 
+      style={{ padding: '24px', border: `1px solid ${color}20`, borderBottom: `3px solid ${color}` }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ padding: '10px', background: `${color}15`, borderRadius: '10px' }}>{icon}</div>
+        <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: color }}>{trend}</div>
       </div>
-      <div className={styles.statBody} style={{ marginBottom: '10px' }}>
-        <span className={styles.statValue} style={{ fontSize: '1.8rem', fontWeight: '950' }}>{value}</span>
-        {trend && (
-          <span className={styles.statTrend} style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '10px' }}>
-            <ArrowUpRight size={14} />
-            {trend}
-          </span>
-        )}
-      </div>
-      <div className={styles.statFooter} style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>{label}</div>
+      <div style={{ fontSize: '1.8rem', fontWeight: '950', marginBottom: '4px' }}>{value}</div>
+      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>{title}</div>
+      <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '12px', lineHeight: '1.4', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+          {desc}
+      </p>
+    </motion.div>
+  );
+}
+
+function MissionItem({ title, reward, complexity, time, color }: any) {
+  return (
+    <div className={styles.missionItem}>
+       <div className={styles.missionIcon} style={{ background: `${color}20`, border: `1px solid ${color}40` }}>
+          <Activity size={18} color={color} />
+       </div>
+       <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>{title}</div>
+          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>{complexity} • {time}</div>
+       </div>
+       <div style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: '900', color: color }}>{reward} ₲</div>
+          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>EST PAYOUT</div>
+       </div>
     </div>
+  );
+}
+
+function QuickAction({ icon, text, link }: any) {
+  return (
+    <Link href={link} style={{ textDecoration: 'none' }}>
+      <button className={styles.quickActionBtn}>
+         {icon}
+         <span>{text}</span>
+      </button>
+    </Link>
   );
 }

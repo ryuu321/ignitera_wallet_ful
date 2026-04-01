@@ -141,31 +141,51 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
       prisma.user.update({
         where: { id: task.assigneeId },
-        data: {
-          balanceStock: { increment: task.baseReward },
-          totalScore: { increment: S },
-          monthlyScore: { increment: S },
-          skillLevel: newSkillLevel,
-          skills: (() => {
-             let curSkills = [];
-             try { curSkills = JSON.parse(uAny.skills || '[]'); } catch(e) { curSkills = []; }
-             // Normalize legacy strings
-             if (curSkills.length > 0 && typeof curSkills[0] === 'string') {
-                 curSkills = curSkills.map((s: string) => ({ name: s, grade: 'GRAY' }));
-             }
-             
-             const taskTags = JSON.parse(tAny.tags || '[]');
-             taskTags.forEach((tagName: string) => {
-                 const existing = curSkills.find((s: any) => s.name === tagName);
-                 if (existing) {
-                     if (existing.grade === 'GRAY') existing.grade = 'BRONZE';
-                 } else {
-                     curSkills.push({ name: tagName, grade: 'BRONZE' });
-                 }
-             });
-             return JSON.stringify(curSkills);
-          })()
-        }
+        data: (() => {
+          const RANK_LADDER = ['Z', 'Y', 'X', 'W', 'V', 'U', 'T', 'S', 'R', 'Q', 'P', 'O', 'N', 'M', 'L', 'K', 'J', 'I', 'H', 'G', 'F', 'E', 'D', 'C', 'B', 'A'];
+          const getPromotionThreshold = (rank: string) => {
+            const n = RANK_LADDER.indexOf(rank);
+            if (n <= 0) return 0;
+            return Math.round(100 * Math.pow(1.20, n));
+          };
+
+          const currentMonthlyScore = (uAny.monthlyScore || 0) + S;
+          const currentRankIdx = RANK_LADDER.indexOf(uAny.rank || 'Z');
+          let nextRank = uAny.rank || 'Z';
+          
+          if (currentRankIdx < RANK_LADDER.length - 1) {
+            const potentialNextRank = RANK_LADDER[currentRankIdx + 1];
+            const threshold = getPromotionThreshold(potentialNextRank);
+            if (currentMonthlyScore >= threshold) {
+              nextRank = potentialNextRank;
+            }
+          }
+
+          return {
+            balanceStock: { increment: task.baseReward },
+            totalScore: { increment: S },
+            monthlyScore: { increment: S },
+            skillLevel: newSkillLevel,
+            rank: nextRank,
+            skills: (() => {
+               let curSkills = [];
+               try { curSkills = JSON.parse(uAny.skills || '[]'); } catch(e) { curSkills = []; }
+               if (curSkills.length > 0 && typeof curSkills[0] === 'string') {
+                   curSkills = curSkills.map((s: string) => ({ name: s, grade: 'GRAY' }));
+               }
+               const taskTags = JSON.parse(tAny.tags || '[]');
+               taskTags.forEach((tagName: string) => {
+                   const existing = curSkills.find((s: any) => s.name === tagName);
+                   if (existing) {
+                       if (existing.grade === 'GRAY') existing.grade = 'BRONZE';
+                   } else {
+                       curSkills.push({ name: tagName, grade: 'BRONZE' });
+                   }
+               });
+               return JSON.stringify(curSkills);
+            })()
+          };
+        })()
       }),
       prisma.user.update({
         where: { id: task.requesterId },

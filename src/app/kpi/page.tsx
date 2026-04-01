@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   ArrowLeft, 
@@ -16,7 +16,8 @@ import {
   Settings,
   Briefcase,
   User,
-  Calculator
+  Calculator,
+  PieChart
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { 
@@ -35,22 +36,49 @@ import { Bar, Line, Pie } from 'react-chartjs-2';
 import styles from '../page.module.css';
 import { clsx } from 'clsx';
 import Link from 'next/link';
+import { getRankColor } from '@/lib/colors';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, Tooltip, Legend);
 
 export default function KPIPage() {
-  const [data, setData] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(true);
+  const [data, setData] = useState<any>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
-    fetch('/api/kpi')
-      .then(res => res.json())
-      .then(d => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(err => console.error(err));
+  useEffect(() => {
+    const fetchKPIData = async () => {
+      try {
+        const [kRes, uRes] = await Promise.all([
+            fetch('/api/kpi'),
+            fetch('/api/users')
+        ]);
+        const kData = await kRes.json();
+        const uData = await uRes.json();
+        
+        setData(kData);
+        setUsers(uData);
+        
+        const savedId = localStorage.getItem('demo-user-id');
+        const user = savedId ? uData.find((u: any) => u.id === savedId) : uData[0];
+        setCurrentUser(user || uData[0]);
+      } catch (err) { console.error(err); }
+      finally { setLoading(false); }
+    };
+    fetchKPIData();
   }, []);
+
+  const handleUserChange = (id: string) => {
+    const user = users.find(u => u.id === id);
+    if (user) {
+      setCurrentUser(user);
+      localStorage.setItem('demo-user-id', id);
+    }
+  };
+
+  if (loading || !data || !currentUser) return <div style={{ height: '100vh', background: '#050511', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Synchronizing Organizational Intelligence...</div>;
+
+  const rankColor = getRankColor(currentUser.rank);
 
   const chartOptions = {
     responsive: true,
@@ -60,7 +88,7 @@ export default function KPIPage() {
       tooltip: { 
         backgroundColor: 'rgba(17, 24, 39, 0.9)', 
         borderColor: 'rgba(255, 255, 255, 0.1)', 
-        borderWidth: 1, padding: 12, titleColor: '#6366f1'
+        borderWidth: 1, padding: 12, titleColor: rankColor
       }
     },
     scales: {
@@ -69,14 +97,12 @@ export default function KPIPage() {
     }
   };
 
-  if (loading || !data) return <div style={{ height: '100vh', background: '#050511', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Synchronizing Organizational Intelligence...</div>;
-
   const barData = {
     labels: data.roleLabels || ['ADMIN', 'PLAYER', 'MANAGER', 'LEADER'],
     datasets: [{
       label: 'Volume (₲)',
       data: data.roleVolume || [0, 0, 0, 0],
-      backgroundColor: ['#6366f1', '#a855f7', '#22d3ee', '#10b981'],
+      backgroundColor: [rankColor, '#a855f7', '#22d3ee', '#10b981'],
       borderRadius: 8
     }]
   };
@@ -86,168 +112,135 @@ export default function KPIPage() {
   };
 
   return (
-    <div className={styles.dashboardContainer} style={{ background: '#050511', minHeight: '100vh', color: 'white' }}>
+    <div className={styles.dashboardContainer} style={{ background: '#050511', minHeight: '100vh', color: 'white', '--primary': rankColor } as any}>
        <aside className={styles.sidebar}>
           <Link href="/" className={styles.logoSection} style={{ textDecoration: 'none' }}>
-             <div className={styles.logoIcon}><ArrowLeft size={14} color="#6366f1" /></div>
-             <span className={styles.logoText}>Back to Hub</span>
+             <div className={styles.logoIcon} style={{ background: rankColor }}><Zap size={14} color="white" /></div>
+             <span className={styles.logoText}>Ignitera <span style={{ color: rankColor }}>OS</span></span>
           </Link>
           
-          <nav className={styles.navMenu} style={{ marginTop: '20px', padding: '0 10px' }}>
+          <nav className={styles.navMenu}>
              <Link href="/" className={styles.navItem}><LayoutDashboard size={18} /> <span>Overview</span></Link>
-             <Link href="/marketplace" className={styles.navItem}><Briefcase size={18} /> <span>Market</span></Link>
+             <Link href="/marketplace" className={styles.navItem}><Briefcase size={18} /> <span>Marketplace</span></Link>
              <Link href="/kpi" className={clsx(styles.navItem, styles.navItemActive)}><BarChart3 size={18} /> <span>Analytics</span></Link>
              <Link href="/profile" className={styles.navItem}><User size={18} /> <span>Profile DNA</span></Link>
              <Link href="/settings" className={styles.navItem}><Settings size={18} /> <span>Settings</span></Link>
-             <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px' }}>
-                <Calculator size={18} color="#6366f1" /> <span style={{ opacity: 0.6 }}>Evaluation Docs</span>
+             <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px', opacity: 0.8 }}>
+                <Calculator size={18} color={rankColor} /> <span style={{ fontSize: '0.85rem' }}>Evaluation Docs</span>
              </Link>
           </nav>
 
-          <div style={{ padding: '20px' }}>
-             <div style={{ padding: '15px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6366f1', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '8px' }}>
-                    <ShieldAlert size={14} />
-                    <span>Audit Online</span>
-                </div>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>Algorithm S v2.0 Integrated</p>
-             </div>
+          <div style={{ flex: 1 }} />
+          
+          <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', letterSpacing: '1px' }}>DEMO_OPERATOR</div>
+             <select 
+               value={currentUser.id} 
+               onChange={(e) => handleUserChange(e.target.value)}
+               style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem' }}
+             >
+               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName} (RANK-{u.rank})</option>)}
+             </select>
           </div>
        </aside>
 
       <main className={styles.mainScrollArea}>
-        <header className={styles.topHeader} style={{ marginBottom: '32px' }}>
+        <header className={styles.topHeader}>
           <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '900' }}>Algorithm <span style={{ color: '#6366f1' }}>Audit</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.4)" }}>Multi-layer hierarchical performance analytics</p>
+            <h1 style={{ fontSize: '2.4rem', fontWeight: '950', letterSpacing: '-1.5px' }}>System <span style={{ color: rankColor }}>Intelligence</span></h1>
+            <p style={{ color: 'rgba(255,255,255,0.4)' }}>Deep architectural evaluation of the neural career ecosystem.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Collusion (Ac)</span>
-                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800', color: (avg.ac || 1) > 0.9 ? '#10b981' : '#f59e0b' }}>{(avg.ac || 1).toFixed(2)}</span>
-            </div>
-            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Uniqueness (Wu)</span>
-                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800', color: '#6366f1' }}>{(avg.wu || 1).toFixed(2)}</span>
-            </div>
-            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Payload (Df)</span>
-                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800' }}>{(avg.df || 1).toFixed(2)}</span>
-            </div>
-            <div className="glass-card" style={{ padding: '12px 15px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Rank Corr (Rr)</span>
-                <span style={{ display: 'block', fontSize: '1rem', fontWeight: '800', color: '#fbbf24' }}>{(avg.rr || 1).toFixed(3)}</span>
-            </div>
+          <div style={{ display: 'flex', gap: '15px' }}>
+             <div className="glass-card" style={{ padding: '15px 25px', display: 'flex', alignItems: 'center', gap: '10px', border: `1px solid ${rankColor}30` }}>
+                <TrendingUp size={20} color={rankColor} />
+                <div>
+                   <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>ORGANIZATIONAL VELOCITY</div>
+                   <div style={{ fontWeight: 'bold' }}>+24.8% Improvement</div>
+                </div>
+             </div>
           </div>
         </header>
 
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <div className="glass-card" style={{ padding: '24px', minHeight: '350px' }}>
-                <h3 style={{ marginBottom: '20px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                   <BarChart3 size={14} color="#6366f1" /> Capital Flux by Authority
-                </h3>
-                <div style={{ height: '250px' }}><Bar options={chartOptions} data={barData} /></div>
-            </div>
-
-            <div className="glass-card" style={{ padding: '24px', minHeight: '350px' }}>
-                <h3 style={{ marginBottom: '20px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                   <Users size={14} color="#a855f7" /> Performance Tier Distribution
-                </h3>
-                <div style={{ height: '250px' }}>
-                    <Pie data={{
-                        labels: ['S-Tier (90+)', 'A-Tier (80-90)', 'B-Tier (70-80)', 'C-Tier (<70)'],
-                        datasets: [{
-                            data: data.qualityDistribution || [0, 0, 0, 0],
-                            backgroundColor: ['#6366f1', '#a855f7', '#22d3ee', '#334155'],
-                            borderWidth: 0
-                        }]
-                    }} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: 'rgba(255,255,255,0.6)', font: { size: 10 } } } } }} />
-                </div>
-            </div>
-
-          {/* SYSTEM WIDE AUDIT LOG - RESTORED C (BASE) */}
-          <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Activity color="#6366f1" size={20} /> Hierarchical Asset Ledger
-                </h3>
-                <div style={{ fontSize: '0.65rem', padding: '6px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'rgba(255,255,255,0.4)' }}>
-                    Displaying last 50 transactions • Audit v2.0
-                </div>
-            </div>
-            
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', fontSize: '0.6rem', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    <th style={{ padding: '15px' }}>Subject</th>
-                    <th style={{ padding: '15px', color: '#6366f1' }}>C (Base)</th>
-                    <th style={{ padding: '15px' }}>Wu</th>
-                    <th style={{ padding: '15px' }}>Wd</th>
-                    <th style={{ padding: '15px' }}>Pc</th>
-                    <th style={{ padding: '15px' }}>Q</th>
-                    <th style={{ padding: '15px' }}>Ac</th>
-                    <th style={{ padding: '15px' }}>Aa</th>
-                    <th style={{ padding: '15px' }}>Df</th>
-                    <th style={{ padding: '15px' }}>Sf</th>
-                    <th style={{ padding: '15px' }}>Eb</th>
-                    <th style={{ padding: '15px', color: '#fbbf24' }}>Rr</th>
-                    <th style={{ padding: '15px', color: 'white', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>S-Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.transactions?.length > 0 ? data.transactions.map((tx: any) => (
-                    <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.75rem' }}>
-                      <td style={{ padding: '15px' }}>
-                        <div style={{ fontWeight: '900' }}>{tx.toUser?.anonymousName}</div>
-                        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)' }}>{tx.toUser?.role}</div>
-                      </td>
-                      <td style={{ padding: '15px', fontWeight: 'bold' }}>{tx.amount.toFixed(0)} ₲</td>
-                      <td style={{ padding: '15px', color: '#6366f1' }}>{tx.wu?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', opacity: 0.5 }}>{tx.wd?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', opacity: 0.8 }}>{tx.pc?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', color: '#10b981' }}>{tx.q?.toFixed(1)}</td>
-                      <td style={{ padding: '15px', color: tx.ac < 0.9 ? '#f59e0b' : 'inherit' }}>{tx.ac?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', color: '#22d3ee' }}>{tx.aa?.toFixed(2)}</td>
-                      <td style={{ padding: '15px' }}>{tx.df?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', color: '#a855f7' }}>{tx.sf?.toFixed(2)}</td>
-                      <td style={{ padding: '15px' }}>{tx.eb?.toFixed(2)}</td>
-                      <td style={{ padding: '15px', color: '#fbbf24', fontWeight: 'bold' }}>{tx.rr?.toFixed(3)}</td>
-                      <td style={{ padding: '15px', fontWeight: '950', color: '#6366f1', borderLeft: '1px solid rgba(255,255,255,0.1)', fontSize: '0.9rem' }}>
-                        {tx.finalScore?.toFixed(1)}
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr><td colSpan={13} style={{ padding: '40px', textAlign: 'center', opacity: 0.3 }}>No neural flux recorded.</td></tr>
-                  )}
-                </tbody>
-              </table>
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px', marginBottom: '30px' }}>
+          <div className="glass-card" style={{ padding: '32px', height: '400px', display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>Hierarchical Resource Distribution (₲)</h3>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Bar data={barData} options={chartOptions} />
             </div>
           </div>
 
-          {/* FACTOR KEY */}
-          <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
-            <div>
-                <h4 style={{ color: '#6366f1', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><Target size={16}/> Base Capital (C)</h4>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    **C (Base Amount)** represents the agreed mission reward. All other factors act as multipliers on this core value.
-                </p>
-            </div>
-            <div>
-                <h4 style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><Award size={16}/> Rank Correction (Rr)</h4>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    Competitive multiplier: `1 + 0.003 * (13 - r)`. Highest ranks receive a compound boost in the A-D hierarchy.
-                </p>
-            </div>
-            <div>
-                <h4 style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}><ShieldAlert size={16}/> Collusion Shield (Ac)</h4>
-                <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                    Triggered when reciprocity or pricing anomalies exceed neural thresholds. Suppression scores safeguard the ecosystem.
-                </p>
+          <div className="glass-card" style={{ padding: '32px' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>Algorithm S Matrix (System Avg)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <FactorInfo label="Wu (Uniqueness)" value={avg.wu} color={rankColor} />
+              <FactorInfo label="Wd (Dispersion)" value={avg.wd} color="#22d3ee" />
+              <FactorInfo label="Pc (Position)" value={avg.pc} color="#a855f7" />
+              <FactorInfo label="Q (Quality)" value={avg.q} color="#10b981" />
+              <FactorInfo label="Ac (Anti-Circle)" value={avg.ac} color="#fbbf24" />
+              <FactorInfo label="Aa (Activity)" value={avg.aa} color={rankColor} />
+              <FactorInfo label="Df (Difficulty)" value={avg.df} color="#ec4899" />
+              <FactorInfo label="Sf (Skill-EMA)" value={avg.sf} color="#6366f1" />
+              <FactorInfo label="Eb (Efficiency)" value={avg.eb} color="#10b981" />
+              <FactorInfo label="Rr (Rank Bonus)" value={avg.rr} color="#fbbf24" />
             </div>
           </div>
         </section>
+
+        <div className="glass-card" style={{ padding: '32px' }}>
+           <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>Deep Audit: Hierarchical Asset Ledger</h3>
+           <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>
+                    <th style={{ padding: '15px' }}>Date-S</th>
+                    <th>To (User DNA)</th>
+                    <th>C (Base)</th>
+                    <th>Final S</th>
+                    <th>Efficiency Matrix (Audit Factors)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.transactions || []).map((tx: any) => (
+                    <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '15px', color: 'rgba(255,255,255,0.4)' }}>{new Date(tx.timestamp).toLocaleDateString()}</td>
+                      <td style={{ fontWeight: 'bold' }}>{tx.toUser?.anonymousName}</td>
+                      <td style={{ opacity: 0.6 }}>₲{tx.amount}</td>
+                      <td style={{ fontWeight: '900', color: rankColor }}>{tx.finalScore.toFixed(1)} S</td>
+                      <td>
+                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                             <Badge label={`Wu ${tx.wu}`} color={rankColor} />
+                             <Badge label={`Wd ${tx.wd}`} color="#22d3ee" />
+                             <Badge label={`Pc ${tx.pc}`} color="#a855f7" />
+                             <Badge label={`Q ${tx.q}`} color="#10b981" />
+                             <Badge label={`Ac ${tx.ac}`} color="#6366f1" />
+                             <Badge label={`Df ${tx.df}`} color="#ec4899" />
+                             <Badge label={`Rr ${tx.rr}`} color="#fbbf24" />
+                         </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+           </div>
+        </div>
       </main>
     </div>
   );
+}
+
+function FactorInfo({ label, value, color }: any) {
+  return (
+    <div style={{ padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: `1px solid ${color}10` }}>
+      <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>{label}</div>
+      <div style={{ fontSize: '1.2rem', fontWeight: '900', color: color }}>x{value.toFixed(2)}</div>
+    </div>
+  );
+}
+
+function Badge({ label, color }: { label: string, color: string }) {
+    return (
+        <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', background: `${color}15`, color: color, fontWeight: 'bold', border: `1px solid ${color}30` }}>
+            {label}
+        </span>
+    );
 }
