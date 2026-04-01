@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
-
 export const metadata: Metadata = {
-  title: "Ignitera Wallet | Internal Currency & Task Marketplace",
-  description: "Next-generation internal task management and currency system for skill-based evaluations.",
+  title: "Ignitera OS | Neural Career Ecosystem",
+  description: "Next-generation hierarchical talent management & internal currency OS",
 };
 
 export default function RootLayout({
@@ -16,15 +12,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
       </head>
-      <body className={`${inter.variable} ${outfit.variable}`}>
-        <div className="layout-overlay" />
-        <main className="main-content">
-          {children}
-        </main>
+      <body style={{ fontFamily: "'Outfit', sans-serif", margin: 0, padding: 0 }}>
+        {children}
       </body>
     </html>
   );
