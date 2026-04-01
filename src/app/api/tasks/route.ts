@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       } else {
         // Deficit: Take all flow, take remaining from stock
         const deficit = rewardNum - newFlow;
-        if (newStock < deficit) throw new Error('Insufficient balance (Flow + Stock combined)');
+        if (newStock < deficit) throw new Error('残高不足です（発行可能枠 ₲ と ストック ₲ の合計が不足しています）');
         newFlow = 0;
         newStock -= deficit;
       }

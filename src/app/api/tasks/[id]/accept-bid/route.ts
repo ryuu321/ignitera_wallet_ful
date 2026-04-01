@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // Auction result is higher than baseline: Deduct more
         const canDeductFlow = Math.min(requester.balanceFlow, diff);
         const remainingDeficit = diff - canDeductFlow;
-        if (requester.balanceStock < remainingDeficit) throw new Error('Insufficient balance to accept higher bid');
+        if (requester.balanceStock < remainingDeficit) throw new Error('残高不足のため入札を受諾できません（ストック残高が不足しています）');
         
         await tx.user.update({
           where: { id: task.requesterId },

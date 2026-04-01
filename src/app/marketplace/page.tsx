@@ -75,6 +75,13 @@ export default function Marketplace() {
       const unitFactor = newTask.expectedUnit === 'd' ? 8 : newTask.expectedUnit === 'w' ? 40 : 1;
       const hours = val * unitFactor;
 
+      const rewardNum = parseFloat(newTask.baseReward);
+      const totalBalance = (currentUser.balanceFlow || 0) + (currentUser.balanceStock || 0);
+      if (rewardNum > totalBalance) {
+        alert(`発行可能枠とストックの合計(₲${totalBalance.toFixed(1)})を超える報酬額は設定できません。`);
+        return;
+      }
+
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,6 +123,19 @@ export default function Marketplace() {
 
   const handleAcceptBid = async (taskId: string, bidId: string) => {
     try {
+      const task = tasks.find(t => t.id === taskId);
+      const bid = task?.bids?.find((b: any) => b.id === bidId);
+      if (!task || !bid) return;
+
+      const diff = bid.amount - task.baseReward;
+      if (diff > 0) {
+        const totalBalance = (currentUser.balanceFlow || 0) + (currentUser.balanceStock || 0);
+        if (totalBalance < diff) {
+          alert(`予算が不足しているため、この入札を受け入れられません（残り ₲${totalBalance.toFixed(1)} です）。`);
+          return;
+        }
+      }
+
       const res = await fetch(`/api/tasks/${taskId}/accept-bid`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
