@@ -362,6 +362,7 @@ export default function Marketplace() {
                                       <div>
                                          <div style={{ fontWeight: '900', fontSize: '1rem' }}>{bid.bidder.anonymousName}</div>
                                          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', display: 'flex', gap: '10px', marginTop: '2px' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.6)' }}>先月スコア: {bid.bidder.lastMonthScore?.toFixed(1)} S</span>
                                             <span>M-Score: {bid.bidder.monthlyScore?.toFixed(0)}</span>
                                             <span>Skill: {bid.bidder.skillLevel?.toFixed(1)}</span>
                                          </div>

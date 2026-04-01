@@ -167,8 +167,12 @@ export default function ProfilePage() {
             <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '1rem', marginTop: '4px' }}>現在の階級: {currentUser.rank} / 専門スキル・マトリクス</p>
           </div>
           <div style={{ display: 'flex', gap: '15px' }}>
+             <div className="glass-card" style={{ padding: '20px 30px', border: `1px solid rgba(255,255,255,0.1)`, background: 'rgba(255,255,255,0.02)' }}>
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>先月の評価信頼 (Last Month)</span>
+                <div style={{ fontSize: '1.6rem', fontWeight: '950', color: 'rgba(255,255,255,0.6)' }}>{currentUser.lastMonthScore?.toFixed(1) || '0.0'} S</div>
+             </div>
              <div className="glass-card" style={{ padding: '20px 30px', border: `1px solid ${rankColor}30` }}>
-                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>生涯累計効率評価</span>
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>生涯累計スコア (Total)</span>
                 <div style={{ fontSize: '1.6rem', fontWeight: '950', color: rankColor }}>{currentUser.totalScore?.toFixed(1)} S</div>
              </div>
           </div>
