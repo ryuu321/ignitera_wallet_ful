@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart3, TrendingUp, Zap, Briefcase, User, Calculator, ChevronDown, ChevronUp, Clock, Target, Layers, Cpu, Brain, ShieldCheck, Activity, Award, LayoutDashboard, Settings
+  BarChart3, TrendingUp, Zap, Briefcase, User, Calculator, ChevronDown, ChevronUp, Clock, Target, Layers, Cpu, Brain, ShieldCheck, Activity, Award, LayoutDashboard, Settings, Info, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -85,20 +85,6 @@ export default function KPIPage() {
     }
   };
 
-  const companyBarData = {
-    labels: data.roleLabels || ['ADMIN', 'PLAYER', 'MANAGER', 'LEADER'],
-    datasets: [{
-      label: '流通量 (₲)',
-      data: data.roleVolume || [0, 0, 0, 0],
-      backgroundColor: [rankColor, '#a855f7', '#22d3ee', '#10b981'],
-      borderRadius: 8
-    }]
-  };
-
-  const companyAvg = data.avgFactors || {
-    wu: 1, wd: 1, pc: 1, q: 1, ac: 1, aa: 1, df: 1, sf: 1, eb: 1, rr: 1
-  };
-
   const personalTxs = (data.transactions || []).filter((tx: any) => tx.toUserId === currentUser.id);
   
   const currentSkillLevel = currentUser.skillLevel || 1.0;
@@ -114,20 +100,7 @@ export default function KPIPage() {
     eb: personalTxs.reduce((a:any,b:any)=>a+(b.eb || 1),0)/personalTxs.length,
     ac: personalTxs.reduce((a:any,b:any)=>a+b.ac,0)/personalTxs.length,
     pc: personalTxs.reduce((a:any,b:any)=>a+b.pc,0)/personalTxs.length,
-  } : companyAvg;
-
-  const personalLineData = {
-    labels: personalTxs.slice(-10).map((tx: any) => new Date(tx.timestamp).toLocaleDateString()),
-    datasets: [{
-        label: '取得スコア (S)',
-        data: personalTxs.slice(-10).map((tx: any) => tx.finalScore),
-        borderColor: rankColor,
-        backgroundColor: `${rankColor}20`,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 4
-    }]
-  };
+  } : data.avgFactors;
 
   return (
     <div className={styles.dashboardContainer} style={{ background: '#050511', minHeight: '100vh', color: 'white', '--primary': rankColor } as any}>
@@ -142,15 +115,12 @@ export default function KPIPage() {
              <Link href="/kpi" className={clsx(styles.navItem, styles.navItemActive)}><BarChart3 size={18} /> <span>アナリティクス</span></Link>
              <Link href="/profile" className={styles.navItem}><User size={18} /> <span>プロフィール DNA</span></Link>
              <Link href="/settings" className={styles.navItem}><Settings size={18} /> <span>設定</span></Link>
-             <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px', opacity: 0.8 }}>
-                <Calculator size={18} color={rankColor} /> <span style={{ fontSize: '0.85rem' }}>アルゴリズム解説</span>
-             </Link>
           </nav>
           <div style={{ flex: 1 }} />
           <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', letterSpacing: '1px' }}>デモ・オペレーター切替</div>
-             <select value={currentUser.id} onChange={(e) => handleUserChange(e.target.value)} style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem', fontWeight: '900' }}>
-               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName} (ランク-{u.rank})</option>)}
+             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>デモ・オペレーター切替</div>
+             <select value={currentUser.id} onChange={(e) => handleUserChange(e.target.value)} style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem' }}>
+               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName}</option>)}
              </select>
           </div>
        </aside>
@@ -159,100 +129,116 @@ export default function KPIPage() {
         <header className={styles.topHeader}>
           <div>
             <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-2px' }}>システム・<span style={{ color: rankColor }}>インテリジェンス</span></h1>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '1rem' }}>{activeTab === 'company' ? '組織全体におけるニューラル・キャリア・エコシステムの深層分析。' : '個人の行動因子とキャリア成長軌跡の多角的な解析。'}</p>
+            <nav style={{ display: 'flex', gap: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginTop: '24px' }}>
+                <TabItem active={activeTab === 'company'} onClick={() => setActiveTab('company')} text="全社分析" color={rankColor} />
+                <TabItem active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} text="個人分析" color={rankColor} />
+            </nav>
           </div>
-          <nav style={{ display: 'flex', gap: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginTop: '24px' }}>
-            <TabItem active={activeTab === 'company'} onClick={() => setActiveTab('company')} text="全社分析" color={rankColor} />
-            <TabItem active={activeTab === 'personal'} onClick={() => setActiveTab('personal')} text="個人分析" color={rankColor} />
-          </nav>
         </header>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'company' ? (
-            <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="company">
-                <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', marginBottom: '32px', padding: '32px 0' }}>
-                  <div className="glass-card" style={{ padding: '32px', height: '420px', display: 'flex', flexDirection: 'column' }}>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '900' }}>役職別リソース分配状況 (₲)</h3>
-                    <div style={{ flex: 1, position: 'relative' }}><Bar data={companyBarData} options={chartOptions} /></div>
-                  </div>
-                  <div className="glass-card" style={{ padding: '32px' }}>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '900' }}>全社平均アルゴリズム因子 (Matrix-S)</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <FactorInfo label="Wu (独自性)" value={companyAvg.wu} color={rankColor} />
-                      <FactorInfo label="Wd (分散性)" value={companyAvg.wd} color="#22d3ee" />
-                      <FactorInfo label="Q (クオリティ)" value={companyAvg.q} color="#10b981" />
-                      <FactorInfo label="Aa (活動指標)" value={companyAvg.aa} color="#a855f7" />
-                      <FactorInfo label="Df (難易度)" value={companyAvg.df} color="#ec4899" />
-                      <FactorInfo label="Sf (スキル習熟)" value={companyAvg.sf} color="#6366f1" />
-                      <FactorInfo label="Eb (効率性)" value={companyAvg.eb} color="#10b981" />
-                      <FactorInfo label="Rr (ランク補正)" value={companyAvg.rr} color="#fbbf24" />
-                    </div>
-                  </div>
-                </section>
-            </motion.section>
-          ) : (
+          {activeTab === 'personal' && (
             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="personal" style={{ display: 'flex', flexDirection: 'column', gap: '32px', padding: '32px 0' }}>
+                
                 <section style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '32px' }}>
                    <div className="glass-card" style={{ padding: '32px' }}>
-                      <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>個人パフォーマンス因子</h3>
-                      
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', letterSpacing: '1.5px', fontWeight: '950' }}>蓄積系因子 (キャリア資産)</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                           <FactorInfo label="Sf (スキルDNA)" value={currentSkillLevel} color="#6366f1" isCumulative />
-                           <FactorInfo label="Rr (ランク補正)" value={currentRr} color="#fbbf24" isCumulative />
-                           <FactorInfo label="Aa (平均活動)" value={pAvg.aa} color="#a855f7" isCumulative />
-                           <FactorInfo label="Wd (分散指数)" value={pAvg.wd} color="#22d3ee" isCumulative />
-                           <FactorInfo label="Ac (耐癒着性)" value={pAvg.ac} color="#fbbf24" isCumulative />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', letterSpacing: '1.5px', fontWeight: '950' }}>変動系因子 (平均パフォーマンス)</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                           <FactorInfo label="Q (平均質)" value={pAvg.q} color="#10b981" />
-                           <FactorInfo label="Eb (平均効率)" value={pAvg.eb} color="#22d3ee" />
-                           <FactorInfo label="Wu (平均独自)" value={pAvg.wu} color={rankColor} />
-                           <FactorInfo label="Df (平均難度)" value={pAvg.df} color="#ec4899" />
-                           <FactorInfo label="Pc (役職期待)" value={pAvg.pc} color="#a855f7" />
-                        </div>
+                      <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>個人パフォーマンス因子 (平均/アセット)</h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                         <div>
+                            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '950', letterSpacing: '1px' }}>キャリア資産 (蓄積系)</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                               <FactorInfo label="Sf (スキルDNA)" value={currentSkillLevel} color="#6366f1" isCumulative />
+                               <FactorInfo label="Rr (ランク補正)" value={currentRr} color="#fbbf24" isCumulative />
+                               <FactorInfo label="Aa (活動指標)" value={pAvg.aa} color="#a855f7" isCumulative />
+                               <FactorInfo label="Wd (分散指数)" value={pAvg.wd} color="#22d3ee" isCumulative />
+                               <FactorInfo label="Ac (耐癒着性)" value={pAvg.ac} color="#fbbf24" isCumulative />
+                            </div>
+                         </div>
+                         <div>
+                            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '950', letterSpacing: '1px' }}>実行パフォーマンス (変動系)</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                               <FactorInfo label="Q (平均質)" value={pAvg.q} color="#10b981" />
+                               <FactorInfo label="Eb (平均効率)" value={pAvg.eb} color="#22d3ee" />
+                               <FactorInfo label="Wu (独自性)" value={pAvg.wu} color={rankColor} />
+                               <FactorInfo label="Df (難易度)" value={pAvg.df} color="#ec4899" />
+                               <FactorInfo label="Pc (役職期待)" value={pAvg.pc} color="#a855f7" />
+                            </div>
+                         </div>
                       </div>
                    </div>
 
                    <div className="glass-card" style={{ padding: '32px', height: '420px', display: 'flex', flexDirection: 'column' }}>
-                      <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>直近 10 件のスコア推移</h3>
-                      <div style={{ flex: 1, position: 'relative' }}><Line data={personalLineData} options={chartOptions} /></div>
+                      <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>直近スコア推移</h3>
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        <Line data={{
+                           labels: personalTxs.slice(-10).map((tx: any) => new Date(tx.timestamp).toLocaleDateString()),
+                           datasets: [{ label: 'Score S', data: personalTxs.slice(-10).map((tx: any) => tx.finalScore), borderColor: rankColor, backgroundColor: `${rankColor}20`, fill: true, tension: 0.4 }]
+                        }} options={chartOptions} />
+                      </div>
                    </div>
                 </section>
 
                 <div className="glass-card" style={{ padding: '32px' }}>
-                   <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: '950' }}>あなたのミッション履歴</h3>
-                   <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', marginBottom: '24px' }}>行をタップすると、アルゴリズムによる評価因子の詳細を確認できます。</p>
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                   <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>あなたのミッション履歴</h3>
+                   
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {personalTxs.map((tx: any) => (
-                        <div key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                          <div onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', cursor: 'pointer', background: expandedTx === tx.id ? 'rgba(255,255,255,0.02)' : 'transparent', borderRadius: '12px', transition: '0.2s' }}>
-                             <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', width: '100px' }}>{new Date(tx.timestamp).toLocaleDateString()}</div>
-                                <div style={{ fontWeight: '900', fontSize: '1rem' }}>₲{tx.amount}</div>
-                                <div style={{ fontSize: '0.75rem', padding: '4px 12px', background: `${rankColor}15`, color: rankColor, borderRadius: '6px', fontWeight: 'bold' }}>S: {tx.finalScore.toFixed(1)}</div>
+                        <div key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px' }}>
+                          <div 
+                            onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}
+                            style={{ 
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                              padding: '24px', cursor: 'pointer', background: expandedTx === tx.id ? 'rgba(255,255,255,0.02)' : 'transparent',
+                              borderRadius: '12px', transition: '0.2s'
+                            }}
+                          >
+                             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flex: 1 }}>
+                                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', width: '90px' }}>{new Date(tx.timestamp).toLocaleDateString()}</div>
+                                <div style={{ fontWeight: '900', fontSize: '1rem', width: '80px' }}>₲{tx.amount}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
+                                    <div style={{ fontSize: '0.8rem', padding: '6px 14px', background: `${rankColor}20`, color: rankColor, borderRadius: '8px', fontWeight: '950', border: `1px solid ${rankColor}30`, boxShadow: `0 0 15px ${rankColor}10` }}>
+                                        S: {tx.finalScore.toFixed(1)}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+                                        <Badge label={`Wu ${tx.wu.toFixed(1)}`} color={rankColor} />
+                                        <Badge label={`Q ${tx.q.toFixed(1)}`} color="#10b981" />
+                                        <Badge label={`Eb ${(tx.eb || 1).toFixed(1)}`} color="#22d3ee" />
+                                        <Badge label={`Df ${tx.df.toFixed(1)}`} color="#ec4899" />
+                                        <Badge label={`Ac ${tx.ac.toFixed(1)}`} color="#fbbf24" />
+                                        <Badge label={`Sf ${tx.sf.toFixed(1)}`} color="#6366f1" />
+                                    </div>
+                                </div>
                              </div>
-                             {expandedTx === tx.id ? <ChevronUp size={18} opacity={0.3} /> : <ChevronDown size={18} opacity={0.3} />}
+                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>{expandedTx === tx.id ? '詳細を閉じる' : '算出詳細'}</div>
+                                {expandedTx === tx.id ? <ChevronUp size={16} opacity={0.5} /> : <ChevronDown size={16} opacity={0.5} />}
+                             </div>
                           </div>
+
                           <AnimatePresence>
                             {expandedTx === tx.id && (
                               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
-                                 <div style={{ padding: '0 24px 32px 144px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '15px' }}>
-                                    <MiniFactor label="Wu (独自)" value={tx.wu} color={rankColor} />
-                                    <MiniFactor label="Wd (分散)" value={tx.wd} color="#22d3ee" />
-                                    <MiniFactor label="Pc (役職)" value={tx.pc} color="#a855f7" />
-                                    <MiniFactor label="Q (質)" value={tx.q} color="#10b981" />
-                                    <MiniFactor label="Ac (癒着)" value={tx.ac} color="#fbbf24" />
-                                    <MiniFactor label="Aa (活動)" value={tx.aa} color={rankColor} />
-                                    <MiniFactor label="Df (難易)" value={tx.df} color="#ec4899" />
-                                    <MiniFactor label="Sf (能書)" value={tx.sf} color="#6366f1" />
-                                    <MiniFactor label="Eb (効率)" value={tx.eb || 1} color="#10b981" />
-                                    <MiniFactor label="Rr (階層)" value={tx.rr} color="#fbbf24" />
+                                 <div style={{ padding: '0 32px 40px 144px' }}>
+                                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '32px' }}>
+                                        <h4 style={{ fontSize: '0.9rem', fontWeight: '950', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <Calculator size={16} color={rankColor} /> <span>算出ロジック・ブレイクダウン</span>
+                                        </h4>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '32px' }}>
+                                            <DetailItem label="Wu (Uniquenness)" value={tx.wu} desc="30日間の全社タスク頻度に基づく希少性スコア。稀なスキルほど高評価。" color={rankColor} />
+                                            <DetailItem label="Wd (Distribution)" value={tx.wd} desc="特定依頼者への依存度を抑制する分散係数。多くの依頼者と働くほど向上。" color="#22d3ee" />
+                                            <DetailItem label="Pc (Position)" value={tx.pc} color="#a855f7" desc="現在の役職に基づく基礎期待値。上位役職ほど高い基準が要求されます。" />
+                                            <DetailItem label="Q (Quality)" value={tx.q} color="#10b981" desc="依頼者による最終承認時評価。プロダクトの質に直結する単発因子。" />
+                                            <DetailItem label="Ac (Anti-collusion)" value={tx.ac} color="#fbbf24" desc="特定のペア間での不正操作を検知・抑制する安全係数。透明性の担保。" />
+                                            <DetailItem label="Aa (Activity)" value={tx.aa} color={rankColor} desc="30日間の活動負荷量に応じたアクティビティ指数。" />
+                                            <DetailItem label="Df (Difficulty)" value={tx.df} color="#ec4899" desc="タスクのアウトプット数、分岐、要求レベルから算出される技術的難易度。" />
+                                            <DetailItem label="Sf (Skill Mastery)" value={tx.sf} color="#6366f1" desc="過去の類似タスクにおける習熟度のEMA（指数移動平均）蓄積値。" />
+                                            <DetailItem label="Eb (Efficiency)" value={tx.eb || 1} color="#10b981" desc="予定時間に対する実働時間の効率性。迅速な完遂を評価。" />
+                                            <DetailItem label="Rr (Rank Ladder)" value={tx.rr} color="#fbbf24" desc="現在のランク区分による階層補正係数。実力の証明アセット。" />
+                                        </div>
+                                        <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
+                                            <span style={{ color: rankColor, fontWeight: 'bold' }}>Formula-S:</span> 報酬(C) x Wu x Wd x Pc x Q x Ac x Aa x (Df + Sf) x Eb x Rr = <span style={{ color: 'white', fontWeight: 'bold' }}>{tx.finalScore.toFixed(2)} S-Points</span>
+                                        </div>
+                                    </div>
                                  </div>
                               </motion.div>
                             )}
@@ -263,6 +249,23 @@ export default function KPIPage() {
                 </div>
             </motion.section>
           )}
+
+          {activeTab === 'company' && (
+             <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="company" style={{ padding: '32px 0' }}>
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+                    <div className="glass-card" style={{ padding: '32px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                       <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>役職別リソース分配 (₲)</h3>
+                       <div style={{ flex: 1, position: 'relative' }}><Bar data={{ labels: data.roleLabels, datasets: [{ data: data.roleVolume, backgroundColor: [rankColor, '#a855f7', '#22d3ee', '#10b981'], borderRadius: 12 }] }} options={chartOptions} /></div>
+                    </div>
+                    <div className="glass-card" style={{ padding: '32px' }}>
+                        <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>全社平均評価因子</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            {Object.entries(data.avgFactors || {}).map(([k, v]: any) => <FactorInfo key={k} label={k.toUpperCase()} value={v} color={rankColor} />)}
+                        </div>
+                    </div>
+                 </div>
+             </motion.section>
+          )}
         </AnimatePresence>
       </main>
     </div>
@@ -271,27 +274,38 @@ export default function KPIPage() {
 
 function TabItem({ active, onClick, text, color }: any) {
     return (
-        <button onClick={onClick} style={{ height: '50px', background: 'none', border: 'none', color: active ? 'white' : 'rgba(255,255,255,0.4)', fontSize: '1.05rem', fontWeight: '950', cursor: 'pointer', position: 'relative', transition: '0.3s', letterSpacing: '-0.5px' }}>
+        <button onClick={onClick} style={{ height: '50px', background: 'none', border: 'none', color: active ? 'white' : 'rgba(255,255,255,0.4)', fontSize: '1.1rem', fontWeight: '950', cursor: 'pointer', position: 'relative', transition: '0.3s' }}>
             {text}
-            {active && <motion.div layoutId="kpi-tab" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '3px', background: color, boxShadow: `0 0 15px ${color}` }} />}
+            {active && <motion.div layoutId="kpi-tab" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '3px', background: color, boxShadow: `0 0 20px ${color}` }} />}
         </button>
     );
 }
 
 function FactorInfo({ label, value, color, isCumulative = false }: any) {
   return (
-    <div style={{ padding: '12px', background: isCumulative ? `${color}10` : 'rgba(255,255,255,0.02)', borderRadius: '12px', border: isCumulative ? `1px solid ${color}40` : `1px solid ${color}15` }}>
-      <div style={{ fontSize: '0.6rem', color: isCumulative ? 'white' : 'rgba(255,255,255,0.4)', marginBottom: '5px', fontWeight: 'bold', opacity: isCumulative ? 1 : 0.6 }}>{label}</div>
-      <div style={{ fontSize: '1.1rem', fontWeight: '900', color: color }}>x{value.toFixed(2)}</div>
+    <div style={{ padding: '15px', background: isCumulative ? `${color}10` : 'rgba(255,255,255,0.02)', borderRadius: '12px', border: isCumulative ? `1px solid ${color}40` : `1px solid ${color}15`, boxShadow: isCumulative ? `0 0 15px ${color}05` : 'none' }}>
+      <div style={{ fontSize: '0.65rem', color: isCumulative ? 'white' : 'rgba(255,255,255,0.4)', marginBottom: '5px', fontWeight: '900', opacity: isCumulative ? 1 : 0.6 }}>{label}</div>
+      <div style={{ fontSize: '1.2rem', fontWeight: '950', color: color }}>x{value.toFixed(2)}</div>
     </div>
   );
 }
 
-function MiniFactor({ label, value, color }: any) {
-  return (
-    <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: `1px solid ${color}15` }}>
-      <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', marginBottom: '4px' }}>{label}</div>
-      <div style={{ fontSize: '0.9rem', fontWeight: '900', color: color }}>x{value.toFixed(2)}</div>
-    </div>
-  );
+function DetailItem({ label, value, color, desc }: any) {
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '950', color }}>{label}</span>
+                <span style={{ fontSize: '1rem', fontWeight: '950', color }}>x{value.toFixed(2)}</span>
+            </div>
+            <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', lineHeight: '1.5' }}>{desc}</p>
+        </div>
+    );
+}
+
+function Badge({ label, color }: { label: string, color: string }) {
+    return (
+        <span style={{ fontSize: '0.65rem', padding: '4px 10px', borderRadius: '6px', background: `${color}15`, color: color, fontWeight: 'bold', border: `1px solid ${color}30`, whiteSpace: 'nowrap' }}>
+            {label}
+        </span>
+    );
 }
