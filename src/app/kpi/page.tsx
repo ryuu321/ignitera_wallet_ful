@@ -76,7 +76,7 @@ export default function KPIPage() {
     }
   };
 
-  if (loading || !data || !currentUser) return <div style={{ height: '100vh', background: '#050511', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Synchronizing Organizational Intelligence...</div>;
+  if (loading || !data || !currentUser) return <div style={{ height: '100vh', background: '#050511', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>組織知能を同期中...</div>;
 
   const rankColor = getRankColor(currentUser.rank);
 
@@ -100,7 +100,7 @@ export default function KPIPage() {
   const barData = {
     labels: data.roleLabels || ['ADMIN', 'PLAYER', 'MANAGER', 'LEADER'],
     datasets: [{
-      label: 'Volume (₲)',
+      label: '流通量 (₲)',
       data: data.roleVolume || [0, 0, 0, 0],
       backgroundColor: [rankColor, '#a855f7', '#22d3ee', '#10b981'],
       borderRadius: 8
@@ -120,26 +120,26 @@ export default function KPIPage() {
           </Link>
           
           <nav className={styles.navMenu}>
-             <Link href="/" className={styles.navItem}><LayoutDashboard size={18} /> <span>Overview</span></Link>
-             <Link href="/marketplace" className={styles.navItem}><Briefcase size={18} /> <span>Marketplace</span></Link>
-             <Link href="/kpi" className={clsx(styles.navItem, styles.navItemActive)}><BarChart3 size={18} /> <span>Analytics</span></Link>
-             <Link href="/profile" className={styles.navItem}><User size={18} /> <span>Profile DNA</span></Link>
-             <Link href="/settings" className={styles.navItem}><Settings size={18} /> <span>Settings</span></Link>
+             <Link href="/" className={styles.navItem}><LayoutDashboard size={18} /> <span>概要</span></Link>
+             <Link href="/marketplace" className={styles.navItem}><Briefcase size={18} /> <span>マーケットプレイス</span></Link>
+             <Link href="/kpi" className={clsx(styles.navItem, styles.navItemActive)}><BarChart3 size={18} /> <span>アナリティクス</span></Link>
+             <Link href="/profile" className={styles.navItem}><User size={18} /> <span>プロフィール DNA</span></Link>
+             <Link href="/settings" className={styles.navItem}><Settings size={18} /> <span>設定</span></Link>
              <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px', opacity: 0.8 }}>
-                <Calculator size={18} color={rankColor} /> <span style={{ fontSize: '0.85rem' }}>Evaluation Docs</span>
+                <Calculator size={18} color={rankColor} /> <span style={{ fontSize: '0.85rem' }}>アルゴリズム解説</span>
              </Link>
           </nav>
 
           <div style={{ flex: 1 }} />
           
           <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', letterSpacing: '1px' }}>DEMO_OPERATOR</div>
+             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', letterSpacing: '1px' }}>デモ・オペレーター切替</div>
              <select 
                value={currentUser.id} 
                onChange={(e) => handleUserChange(e.target.value)}
                style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem' }}
              >
-               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName} (RANK-{u.rank})</option>)}
+               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName} (ランク-{u.rank})</option>)}
              </select>
           </div>
        </aside>
@@ -147,15 +147,15 @@ export default function KPIPage() {
       <main className={styles.mainScrollArea}>
         <header className={styles.topHeader}>
           <div>
-            <h1 style={{ fontSize: '2.4rem', fontWeight: '950', letterSpacing: '-1.5px' }}>System <span style={{ color: rankColor }}>Intelligence</span></h1>
-            <p style={{ color: 'rgba(255,255,255,0.4)' }}>Deep architectural evaluation of the neural career ecosystem.</p>
+            <h1 style={{ fontSize: '2.4rem', fontWeight: '950', letterSpacing: '-1.5px' }}>システム・<span style={{ color: rankColor }}>インテリジェンス</span></h1>
+            <p style={{ color: 'rgba(255,255,255,0.4)' }}>組織全体におけるニューラル・キャリア・エコシステムの深層分析。</p>
           </div>
           <div style={{ display: 'flex', gap: '15px' }}>
              <div className="glass-card" style={{ padding: '15px 25px', display: 'flex', alignItems: 'center', gap: '10px', border: `1px solid ${rankColor}30` }}>
                 <TrendingUp size={20} color={rankColor} />
                 <div>
-                   <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>ORGANIZATIONAL VELOCITY</div>
-                   <div style={{ fontWeight: 'bold' }}>+24.8% Improvement</div>
+                   <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>組織全体の成長率</div>
+                   <div style={{ fontWeight: 'bold' }}>+24.8% の改善</div>
                 </div>
              </div>
           </div>
@@ -163,40 +163,40 @@ export default function KPIPage() {
 
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px', marginBottom: '30px' }}>
           <div className="glass-card" style={{ padding: '32px', height: '400px', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>Hierarchical Resource Distribution (₲)</h3>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>役職別リソース分配状況 (₲)</h3>
             <div style={{ flex: 1, position: 'relative' }}>
               <Bar data={barData} options={chartOptions} />
             </div>
           </div>
 
           <div className="glass-card" style={{ padding: '32px' }}>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>Algorithm S Matrix (System Avg)</h3>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>アルゴリズム S 評価マトリクス (全社平均)</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <FactorInfo label="Wu (Uniqueness)" value={avg.wu} color={rankColor} />
-              <FactorInfo label="Wd (Dispersion)" value={avg.wd} color="#22d3ee" />
-              <FactorInfo label="Pc (Position)" value={avg.pc} color="#a855f7" />
-              <FactorInfo label="Q (Quality)" value={avg.q} color="#10b981" />
-              <FactorInfo label="Ac (Anti-Circle)" value={avg.ac} color="#fbbf24" />
-              <FactorInfo label="Aa (Activity)" value={avg.aa} color={rankColor} />
-              <FactorInfo label="Df (Difficulty)" value={avg.df} color="#ec4899" />
-              <FactorInfo label="Sf (Skill-EMA)" value={avg.sf} color="#6366f1" />
-              <FactorInfo label="Eb (Efficiency)" value={avg.eb} color="#10b981" />
-              <FactorInfo label="Rr (Rank Bonus)" value={avg.rr} color="#fbbf24" />
+              <FactorInfo label="Wu (独自性)" value={avg.wu} color={rankColor} />
+              <FactorInfo label="Wd (分散性)" value={avg.wd} color="#22d3ee" />
+              <FactorInfo label="Pc (役職係数)" value={avg.pc} color="#a855f7" />
+              <FactorInfo label="Q (クオリティ)" value={avg.q} color="#10b981" />
+              <FactorInfo label="Ac (耐癒着性)" value={avg.ac} color="#fbbf24" />
+              <FactorInfo label="Aa (活動指標)" value={avg.aa} color={rankColor} />
+              <FactorInfo label="Df (難易度)" value={avg.df} color="#ec4899" />
+              <FactorInfo label="Sf (スキル習熟)" value={avg.sf} color="#6366f1" />
+              <FactorInfo label="Eb (効率性)" value={avg.eb} color="#10b981" />
+              <FactorInfo label="Rr (ランク補正)" value={avg.rr} color="#fbbf24" />
             </div>
           </div>
         </section>
 
         <div className="glass-card" style={{ padding: '32px' }}>
-           <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>Deep Audit: Hierarchical Asset Ledger</h3>
+           <h3 style={{ fontSize: '1.1rem', marginBottom: '24px', fontWeight: 'bold' }}>深層監査: 階層的資産台帳</h3>
            <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>
-                    <th style={{ padding: '15px' }}>Date-S</th>
-                    <th>To (User DNA)</th>
-                    <th>C (Base)</th>
-                    <th>Final S</th>
-                    <th>Efficiency Matrix (Audit Factors)</th>
+                    <th style={{ padding: '15px' }}>監査日時</th>
+                    <th>対象者 (User DNA)</th>
+                    <th>基準額 (C)</th>
+                    <th>最終評価 (S)</th>
+                    <th>計算マトリクス (監査因子)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -208,13 +208,13 @@ export default function KPIPage() {
                       <td style={{ fontWeight: '900', color: rankColor }}>{tx.finalScore.toFixed(1)} S</td>
                       <td>
                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                             <Badge label={`Wu ${tx.wu}`} color={rankColor} />
-                             <Badge label={`Wd ${tx.wd}`} color="#22d3ee" />
-                             <Badge label={`Pc ${tx.pc}`} color="#a855f7" />
-                             <Badge label={`Q ${tx.q}`} color="#10b981" />
-                             <Badge label={`Ac ${tx.ac}`} color="#6366f1" />
-                             <Badge label={`Df ${tx.df}`} color="#ec4899" />
-                             <Badge label={`Rr ${tx.rr}`} color="#fbbf24" />
+                             <Badge label={`独 ${tx.wu}`} color={rankColor} />
+                             <Badge label={`分 ${tx.wd}`} color="#22d3ee" />
+                             <Badge label={`役 ${tx.pc}`} color="#a855f7" />
+                             <Badge label={`質 ${tx.q}`} color="#10b981" />
+                             <Badge label={`防 ${tx.ac}`} color="#6366f1" />
+                             <Badge label={`難 ${tx.df}`} color="#ec4899" />
+                             <Badge label={`階 ${tx.rr}`} color="#fbbf24" />
                          </div>
                       </td>
                     </tr>

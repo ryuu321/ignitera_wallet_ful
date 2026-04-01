@@ -40,14 +40,14 @@ export default function AlgorithmDocs() {
       <aside className={styles.sidebar}>
          <Link href="/kpi" className={styles.logoSection} style={{ textDecoration: 'none' }}>
             <div className={styles.logoIcon}><ArrowLeft size={14} color="#6366f1" /></div>
-            <span className={styles.logoText}>Back to Analytics</span>
+            <span className={styles.logoText}>分析に戻る</span>
          </Link>
          
          <div style={{ marginTop: '30px', padding: '10px' }}>
             <div className="glass-card" style={{ padding: '24px', border: '1px solid #6366f1', textAlign: 'center' }}>
                 <Calculator size={32} color="#6366f1" style={{ marginBottom: '15px' }} />
                 <h3 style={{ fontSize: '1rem', fontWeight: '900' }}>Algorithm S</h3>
-                <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: '8px', lineHeight: '1.5' }}>Behavioral Evaluation Analysis Engine v2.0 Integrated Integrated Spec</p>
+                <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: '8px', lineHeight: '1.5' }}>行動評価分析エンジン v2.0 統合仕様書</p>
             </div>
          </div>
       </aside>
@@ -55,8 +55,8 @@ export default function AlgorithmDocs() {
       <main className={styles.mainScrollArea}>
         <header className={styles.topHeader} style={{ marginBottom: '40px' }}>
           <div>
-            <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-1.5px' }}>Unified <span style={{ color: '#6366f1' }}>Evaluation Logic</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: '1.1rem' }}>Technical documentation for the 12-factor behavioral scoring system.</p>
+            <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-1.5px' }}>統合<span style={{ color: '#6366f1' }}>評価ロジック</span></h1>
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: '1.1rem' }}>11次元の行動スコアリング・システムに関する技術ドキュメント</p>
           </div>
         </header>
 
@@ -68,48 +68,48 @@ export default function AlgorithmDocs() {
         >
             {/* The Integrated Formula */}
             <motion.div variants={item} className="glass-card" style={{ gridColumn: '1 / -1', padding: '48px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(0,0,0,0))' }}>
-                <h2 style={{ fontSize: '0.75rem', color: '#6366f1', textTransform: 'uppercase', marginBottom: '24px', letterSpacing: '3px', fontWeight: 'bold' }}>The Ultimate Equation</h2>
+                <h2 style={{ fontSize: '0.75rem', color: '#6366f1', textTransform: 'uppercase', marginBottom: '24px', letterSpacing: '3px', fontWeight: 'bold' }}>究極の数理モデル</h2>
                 <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white', letterSpacing: '2px', marginBottom: '12px', wordBreak: 'break-all', lineHeight: '1.4' }}>
                   S = C × Wu × Wd × Pc × Q × Ac × Aa × Df × Sf × Eb × Rr
                 </div>
                 <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', maxWidth: '800px', margin: '0 auto' }}>
-                    Algorithm S v2.0 represents a multi-dimensional synthesis of capital, network hygiene, effort alignment, and competitive standing.
+                    Algorithm S v2.0 は、資本、ネットワークの透明性、努力の方向性、そして競争優位性を統合した、多次元的な価値算出エンジンです。
                 </p>
             </motion.div>
 
             {/* Factor Groups */}
             <motion.div variants={item} className="glass-card" style={{ padding: '32px' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Star size={20} color="#ffd700" /> Graded Mastery (Sf)
+                    <Star size={20} color="#ffd700" /> 習熟度評価 (Sf)
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     <div style={{ borderLeft: '2px solid #ffd700', paddingLeft: '20px' }}>
-                         <div style={{ fontWeight: '900', fontSize: '1rem', color: 'white' }}>Skill Grades</div>
-                         <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>Mastery levels: **Basic &lt; Bronze &lt; Silver &lt; Gold.** Higher grades increase your effective baseline for the **Sf** factor.</p>
+                         <div style={{ fontWeight: '900', fontSize: '1rem', color: 'white' }}>スキル・グレード</div>
+                         <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', marginTop: '6px' }}>習熟レベル: **Basic &lt; Bronze &lt; Silver &lt; Gold.** 上位グレードへの昇格により、Sf因子の計算基準値が向上します。</p>
                     </div>
-                    <FactorInfo title="Sf (Skill Factor)" desc="Rewards performing tasks above your registered grade-baseline. A 'Silver' performer taking on 'Gold' level logic receives a 1.2x boost." />
+                    <FactorInfo title="Sf (Skill Factor)" desc="登録された基準グレードを超える難易度のミッションを完遂することで報酬が増加します。現在のレベルを超えるミッションへの挑戦を推奨します。" />
                 </div>
             </motion.div>
 
             <motion.div variants={item} className="glass-card" style={{ padding: '32px' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Activity size={20} color="#22d3ee" /> Behavioral Flux
+                    <Activity size={20} color="#22d3ee" /> 行動流動性
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <FactorInfo title="Aa (Activity)" desc="Measures current cycle output relative to the system-wide peer average." />
-                    <FactorInfo title="Df (Difficulty)" desc="Objective payload (n_outputs, n_branches, n_skills) normalization." />
-                    <FactorInfo title="Eb (Efficiency)" desc="Time-saving bonus for completion before the requested deadline." />
+                    <FactorInfo title="Aa (Activity / 活動量)" desc="現在のサイクルにおけるアウトプットを、システム全体の平均値と比較して評価します。" />
+                    <FactorInfo title="Df (Difficulty / 難易度)" desc="ミッションの成果物、分岐数、必要スキル数から算出される客観的な負荷係数です。" />
+                    <FactorInfo title="Eb (Efficiency / 効率性)" desc="デッドラインよりも早く完了させた場合に付与されるボーナス係数です。" />
                 </div>
             </motion.div>
 
             <motion.div variants={item} className="glass-card" style={{ padding: '32px' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <ShieldAlert size={20} color="#f59e0b" /> Integrity & Rank
+                    <ShieldAlert size={20} color="#f59e0b" /> 健全性とランク
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <FactorInfo title="Ac (Anti-Collusion)" desc="Real-time mitigation of reciprocity and price anomaly rings." />
-                    <FactorInfo title="Rr (Rank Correction)" desc="Promotion bonus: 1 + 0.003 * (13 - r). Boosts standing in top-tiers." />
-                    <FactorInfo title="Wd (Dispersion)" desc="Penalizes repeated same-source transactions to prevent network centrality." />
+                    <FactorInfo title="Ac (Anti-Collusion / 耐癒着性)" desc="特定のユーザー間での相互入札や価格操作を検知し、評価を補正します。" />
+                    <FactorInfo title="Rr (Rank Correction / ランク補正)" desc="上位階層における競争を促すための昇格ボーナスです。1 + 0.003 * (13 - r) で算出されます。" />
+                    <FactorInfo title="Wd (Dispersion / 分散性)" desc="同一ソースからの繰り返し報酬を抑制し、ネットワークの分散化を促します。" />
                 </div>
             </motion.div>
 
@@ -118,9 +118,9 @@ export default function AlgorithmDocs() {
                <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
                   <ShieldCheck size={48} color="#10b981" style={{ flexShrink: 0 }} />
                   <div>
-                    <h3 style={{ fontSize: '1.3rem', fontWeight: '900', marginBottom: '16px' }}>The "Un-Gamable" Ecosystem</h3>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: '900', marginBottom: '16px' }}>「攻略」不可能なエコシステム</h3>
                     <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.5)', lineHeight: '1.8' }}>
-                      Traditional systems are easily exploited by volume or speed. Algorithm S v2.0 (Integrated Spec) prioritizes **rarity, decentralization, and skill progression.** By penalizing dependency through **Wd** and detecting mutual circles via **Ac**, it ensures that your Rank (A-Z) and Payout are derived from true organizational value, not just repetitive activity.
+                      従来のシステムは単純な取引量やスピードでハックされがちでした。Algorithm S v2.0（統合仕様）は、**「希少性、分散性、およびスキル成長」**を最重要視します。Wdによる依存性の抑制やAcによる癒着の検知により、あなたのランクと報酬が「単純作業」ではなく「真の組織価値」に基づいていることを保証します。
                     </p>
                   </div>
                </div>
