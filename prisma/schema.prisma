@@ -23,6 +23,7 @@ model User {
   
   balanceFlow       Float     @default(1000)
   balanceStock      Float     @default(0)
+  balanceIgn        Float     @default(0)
   
   // Relationships
   tasksRequested    Task[]    @relation("RequestedBy")
