@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Search, Briefcase, Filter, ArrowLeft, Target, ShieldCheck, Zap, X, Send, History, Award, LayoutDashboard, User, BarChart3, Settings, Calculator, MessageSquare, Clock, MapPin, CheckCircle2, TrendingUp, AlertCircle, ChevronRight, Layers, Cpu, Brain, Rocket, Star, PlusCircle, ExternalLink, Activity
+  Plus, Search, Briefcase, Filter, ArrowLeft, Target, ShieldCheck, Zap, X, Send, History, Award, LayoutDashboard, User, BarChart3, Settings, Calculator, MessageSquare, Clock, MapPin, CheckCircle2, TrendingUp, AlertCircle, ChevronRight, Layers, Cpu, Brain, Rocket, Star, PlusCircle, ExternalLink, Activity, Timer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from '../page.module.css';
@@ -21,7 +21,6 @@ export default function Marketplace() {
   const [showBidModal, setShowBidModal] = useState<any>(null);
   const [showReviewModal, setShowReviewModal] = useState<any>(null);
   const [showMessageModal, setShowMessageModal] = useState<any>(null);
-  const [showCandidateProfile, setShowCandidateProfile] = useState<any>(null);
   
   const [masterSkills, setMasterSkills] = useState<any[]>([]);
   const [newTask, setNewTask] = useState({
@@ -32,6 +31,7 @@ export default function Marketplace() {
   
   const [newBid, setNewBid] = useState({ amount: '', message: '' });
   const [qualityScore, setQualityScore] = useState('1.0');
+  const [actualHours, setActualHours] = useState('');
   const [taskMessages, setTaskMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
 
@@ -132,13 +132,23 @@ export default function Marketplace() {
       const res = await fetch(`/api/tasks/${showReviewModal.id}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qualityScore: parseFloat(qualityScore) }),
+        body: JSON.stringify({ 
+          qualityScore: parseFloat(qualityScore),
+          actualHours: actualHours ? parseFloat(actualHours) : null 
+        }),
       });
       if (res.ok) {
         setShowReviewModal(null);
+        setActualHours('');
         fetchData();
+      } else {
+        const errorData = await res.json();
+        alert(`エラー: ${errorData.error}`);
       }
-    } catch (err) { console.error(err); }
+    } catch (err: any) { 
+        console.error(err); 
+        alert(`通信エラー: ${err.message}`);
+    }
   };
 
   const fetchMessages = async (taskId: string) => {
@@ -332,21 +342,13 @@ export default function Marketplace() {
 
                   {view === 'my-issued' && task.status === 'BIDDING' && task.bids?.length > 0 && (
                      <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>候補者一覧 ({task.bids.length})</div>
                         {task.bids.map((bid: any) => {
                            const bColor = getRankColor(bid.bidder.rank);
                            return (
-                             <motion.div 
-                               initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                               key={bid.id} 
-                               className="glass-card"
-                               style={{ padding: '24px', borderLeft: `4px solid ${bColor}`, background: 'rgba(255,255,255,0.02)' }}
-                             >
+                             <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} key={bid.id} className="glass-card" style={{ padding: '24px', borderLeft: `4px solid ${bColor}`, background: 'rgba(255,255,255,0.02)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${bColor}20`, border: `1px solid ${bColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: bColor, fontSize: '1.1rem' }}>
-                                         {bid.bidder.rank}
-                                      </div>
+                                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${bColor}20`, border: `1px solid ${bColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: bColor, fontSize: '1.1rem' }}>{bid.bidder.rank}</div>
                                       <div>
                                          <div style={{ fontWeight: '900', fontSize: '1rem' }}>{bid.bidder.anonymousName}</div>
                                          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', display: 'flex', gap: '10px', marginTop: '2px' }}>
@@ -360,14 +362,10 @@ export default function Marketplace() {
                                       <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)' }}>PROPOSED_UNIT</div>
                                    </div>
                                 </div>
-
-                                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', marginBottom: '4px' }}>
-                                   {bid.message || 'ミッション実行プロトコル未記述'}
-                                </div>
-
+                                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', marginBottom: '4px' }}>{bid.message || 'ミッション実行プロトコル未記述'}</div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>
                                    <div style={{ flex: 1 }}>
-                                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', marginBottom: '6px', letterSpacing: '0.5px' }}>HOLDER_SKILLSETS</div>
+                                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', marginBottom: '6px' }}>HOLDER_SKILLSETS</div>
                                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                          {(() => {
                                            try {
@@ -379,12 +377,7 @@ export default function Marketplace() {
                                          })()}
                                       </div>
                                    </div>
-                                   <button 
-                                     onClick={() => handleAcceptBid(task.id, bid.id)} 
-                                     style={{ background: bColor, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 24px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold', boxShadow: `0 4px 15px ${bColor}30` }}
-                                   >
-                                      採用する
-                                   </button>
+                                   <button onClick={() => handleAcceptBid(task.id, bid.id)} style={{ background: bColor, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 24px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold' }}>採用する</button>
                                 </div>
                              </motion.div>
                            );
@@ -401,7 +394,7 @@ export default function Marketplace() {
       <AnimatePresence>
         {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} masterSkills={masterSkills} color={rankColor} refreshSkills={fetchData} /></div>}
         {showBidModal && <div className="modal-overlay"><BidModal task={showBidModal} onClose={() => setShowBidModal(null)} onSubmit={handlePlaceBid} newBid={newBid} setNewBid={setNewBid} color={rankColor} /></div>}
-        {showReviewModal && <div className="modal-overlay"><ReviewModal task={showReviewModal} onClose={() => setShowReviewModal(null)} onSubmit={handleCompleteTask} qualityScore={qualityScore} setQualityScore={setQualityScore} color={rankColor} /></div>}
+        {showReviewModal && <div className="modal-overlay"><ReviewModal task={showReviewModal} onClose={() => setShowReviewModal(null)} onSubmit={handleCompleteTask} qualityScore={qualityScore} setQualityScore={setQualityScore} actualHours={actualHours} setActualHours={setActualHours} color={rankColor} /></div>}
         {showMessageModal && <div className="modal-overlay"><MessageModal task={showMessageModal} messages={taskMessages} currentUser={currentUser} onClose={() => setShowMessageModal(null)} onSend={handleSendMessage} newMessage={newMessage} setNewMessage={setNewMessage} color={rankColor} /></div>}
       </AnimatePresence>
 
@@ -435,12 +428,10 @@ function MetricItem({ icon, label, value }: any) {
 
 function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, color, refreshSkills }: any) {
   const [newTagInput, setNewTagInput] = useState('');
-
   const toggleSkill = (name: string) => {
     const next = newTask.tags.includes(name) ? newTask.tags.filter((t: string) => t !== name) : [...newTask.tags, name];
     setNewTask({...newTask, tags: next});
   };
-
   const handleAddNewTag = async () => {
     if (!newTagInput.trim()) return;
     try {
@@ -456,68 +447,46 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, col
       }
     } catch(e) { console.error(e); }
   };
-
   return (
     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="glass-card" style={{ width: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '48px', border: `1px solid ${color}30` }}>
       <h2 style={{ fontSize: '2.2rem', fontWeight: '950', marginBottom: '32px', letterSpacing: '-1.5px' }}>ミッションを<span style={{ color }}>発行する</span></h2>
       <form onSubmit={onSubmit}>
-        <FormField label="任務タイトル (プロトコル名)" value={newTask.title} onChange={(v:any) => setNewTask({...newTask, title: v})} placeholder="例: ニューラル・ネットワークの再構築" />
-        <FormField label="詳細プロトコル (要件定義)" value={newTask.description} onChange={(v:any) => setNewTask({...newTask, description: v})} type="textarea" placeholder="ミッションの具体的な目標と制約を記述してください..." />
-        
+        <FormField label="任務タイトル (プロトコル名)" value={newTask.title} onChange={(v:any) => setNewTask({...newTask, title: v})} />
+        <FormField label="詳細プロトコル (要件定義)" value={newTask.description} onChange={(v:any) => setNewTask({...newTask, description: v})} type="textarea" />
         <div style={{ display: 'flex', gap: '20px', marginBottom: '32px' }}>
+            <div style={{ flex: 1 }}><FormField label="基準報酬 (₲)" value={newTask.baseReward} onChange={(v:any) => setNewTask({...newTask, baseReward: v})} type="number" /></div>
             <div style={{ flex: 1 }}>
-                <FormField label="基準報酬 (₲)" value={newTask.baseReward} onChange={(v:any) => setNewTask({...newTask, baseReward: v})} type="number" />
-            </div>
-            <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', fontWeight: '900', letterSpacing: '1px' }}>推定納期</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', fontWeight: '900' }}>推定納期</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <input type="number" value={newTask.expectedValue} onChange={(e) => setNewTask({...newTask, expectedValue: e.target.value})} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '14px', borderRadius: '10px', outline: 'none' }} />
+                    <input type="number" value={newTask.expectedValue} onChange={(e) => setNewTask({...newTask, expectedValue: e.target.value})} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '14px', borderRadius: '10px' }} />
                     <select value={newTask.expectedUnit} onChange={(e) => setNewTask({...newTask, expectedUnit: e.target.value})} style={{ width: '100px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '14px', borderRadius: '10px' }}>
                         <option value="h">時間</option><option value="d">日間</option><option value="w">週間</option>
                     </select>
                 </div>
             </div>
         </div>
-
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '28px', borderRadius: '20px', border: `1px solid ${color}20`, marginBottom: '32px' }}>
-          <h4 style={{ fontSize: '0.8rem', color, marginBottom: '20px', fontWeight: '900', letterSpacing: '1px' }}>複雑性マトリクス (D-FACTOR)</h4>
+          <h4 style={{ fontSize: '0.8rem', color, marginBottom: '20px', fontWeight: '900' }}>複雑性マトリクス (D-FACTOR)</h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <FormField label="アウトプット数 (n_o)" value={newTask.outputs} onChange={(v:any) => setNewTask({...newTask, outputs: v})} type="number" />
-            <FormField label="分岐難易度 (n_b)" value={newTask.branches} onChange={(v:any) => setNewTask({...newTask, branches: v})} type="number" />
-            <FormField label="要求スキル習熟 (SReq)" value={newTask.requiredSkill} onChange={(v:any) => setNewTask({...newTask, requiredSkill: v})} type="number" />
+            <FormField label="アウトプット数" value={newTask.outputs} onChange={(v:any) => setNewTask({...newTask, outputs: v})} type="number" />
+            <FormField label="分岐難易度" value={newTask.branches} onChange={(v:any) => setNewTask({...newTask, branches: v})} type="number" />
+            <FormField label="要求スキル習熟" value={newTask.requiredSkill} onChange={(v:any) => setNewTask({...newTask, requiredSkill: v})} type="number" />
             <FormField label="必要最少スキル数" value={newTask.skillCount} onChange={(v:any) => setNewTask({...newTask, skillCount: v})} type="number" />
           </div>
         </div>
-
         <div style={{ marginBottom: '32px' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '900', letterSpacing: '1px' }}>必要スキル・マトリクス</label>
-            
+            <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '900' }}>必要スキル</label>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                <input 
-                  value={newTagInput} 
-                  onChange={(e) => setNewTagInput(e.target.value)} 
-                  placeholder="新しいスキルを追加..." 
-                  style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 15px', color: 'white', fontSize: '0.85rem' }} 
-                />
-                <button type="button" onClick={handleAddNewTag} style={{ padding: '0 15px', background: `${color}20`, border: `1px solid ${color}30`, color, borderRadius: '10px', cursor: 'pointer' }}>
-                   <PlusCircle size={18} />
-                </button>
+                <input value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} placeholder="新しいスキルを追加..." style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 15px', color: 'white' }} />
+                <button type="button" onClick={handleAddNewTag} style={{ padding: '0 15px', background: `${color}20`, border: `1px solid ${color}30`, color, borderRadius: '10px' }}><PlusCircle size={18} /></button>
             </div>
-
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                {masterSkills.map((s: any) => (
-                    <button key={s.id} type="button" onClick={() => toggleSkill(s.name)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid', borderColor: newTask.tags.includes(s.name) ? color : 'rgba(255,255,255,0.1)', background: newTask.tags.includes(s.name) ? `${color}20` : 'transparent', color: newTask.tags.includes(s.name) ? 'white' : 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: '0.2s' }}>
-                        {s.name}
-                    </button>
-                ))}
+                {masterSkills.map((s: any) => (<button key={s.id} type="button" onClick={() => toggleSkill(s.name)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid', borderColor: newTask.tags.includes(s.name) ? color : 'rgba(255,255,255,0.1)', background: newTask.tags.includes(s.name) ? `${color}20` : 'transparent', color: newTask.tags.includes(s.name) ? 'white' : 'rgba(255,255,255,0.4)' }}>{s.name}</button>))}
             </div>
         </div>
-
         <div style={{ display: 'flex', gap: '16px' }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '14px', cursor: 'pointer', fontWeight: 'bold' }}>破棄</button>
-          <button type="submit" className="neon-button" style={{ flex: 2, background: color, justifyContent: 'center', height: '54px' }}>
-             <Rocket size={18} /> <span>プロトコルを放送する</span>
-          </button>
+          <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '14px' }}>破棄</button>
+          <button type="submit" className="neon-button" style={{ flex: 2, background: color, justifyContent: 'center', height: '54px' }}><Rocket size={18} /> <span>プロトコルを放送する</span></button>
         </div>
       </form>
     </motion.div>
@@ -527,30 +496,28 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, col
 function BidModal({ task, onClose, onSubmit, newBid, setNewBid, color }: any) {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '500px', padding: '48px', border: `1px solid ${color}30` }}>
-      <h3 style={{ fontSize: '1.8rem', fontWeight: '950', marginBottom: '8px', letterSpacing: '-1px' }}>ミッションへの入札</h3>
+      <h3 style={{ fontSize: '1.8rem', fontWeight: '950', marginBottom: '8px' }}>ミッションへの入札</h3>
       <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)', marginBottom: '32px' }}>基準報酬額: <span style={{ color, fontWeight: 'bold' }}>₲{task.baseReward}</span></p>
-      
       <form onSubmit={onSubmit}>
-        <FormField label="提示単価 (₲)" value={newBid.amount} onChange={(v:any) => setNewBid({...newBid, amount: v})} type="number" placeholder="戦略的な価格を入力..." />
-        <FormField label="提案事項 / メッセージ" value={newBid.message} onChange={(v:any) => setNewBid({...newBid, message: v})} type="textarea" placeholder="実行プロトコルの概要をご提示ください..." />
+        <FormField label="提示単価 (₲)" value={newBid.amount} onChange={(v:any) => setNewBid({...newBid, amount: v})} type="number" />
+        <FormField label="提案事項" value={newBid.message} onChange={(v:any) => setNewBid({...newBid, message: v})} type="textarea" />
         <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '14px', cursor: 'pointer', fontWeight: 'bold' }}>キャンセル</button>
-          <button type="submit" className="neon-button" style={{ flex: 2, background: color, justifyContent: 'center' }}>
-             <Send size={18} /> <span>入札プロトコルを送信</span>
-          </button>
+          <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '14px' }}>キャンセル</button>
+          <button type="submit" className="neon-button" style={{ flex: 2, background: color, justifyContent: 'center' }}><Send size={18} /> <span>入札プロトコルを送信</span></button>
         </div>
       </form>
     </motion.div>
   );
 }
 
-function ReviewModal({ task, onClose, onSubmit, qualityScore, setQualityScore, color }: any) {
+function ReviewModal({ task, onClose, onSubmit, qualityScore, setQualityScore, actualHours, setActualHours, color }: any) {
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '480px', padding: '48px' }}>
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '480px', padding: '48px', border: `1px solid ${color}30` }}>
       <h3 style={{ fontSize: '1.5rem', fontWeight: '950', marginBottom: '12px' }}>最終品質レビュー</h3>
-      <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', marginBottom: '32px' }}>担当: {task.assignee?.anonymousName}</p>
+      <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', marginBottom: '32px' }}>担当者: {task.assignee?.anonymousName}</p>
+      
       <form onSubmit={onSubmit}>
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
             <label style={{ fontSize: '0.85rem', color: 'white', fontWeight: '900' }}>クオリティ係数 (Q)</label>
             <span style={{ color, fontWeight: 'bold' }}>x{qualityScore}</span>
@@ -560,8 +527,22 @@ function ReviewModal({ task, onClose, onSubmit, qualityScore, setQualityScore, c
              <span>要求未達</span><span>標準スコア</span><span>期待過達</span>
           </div>
         </div>
+
+        <div style={{ marginBottom: '32px' }}>
+           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', marginBottom: '10px' }}>
+              <Timer size={14} /> <span>実働時間 (Eb係数に影響)</span>
+           </label>
+           <input 
+             type="number" step="0.1" 
+             value={actualHours} onChange={(e) => setActualHours(e.target.value)} 
+             placeholder={`推定 ${task.expectedHours}h に対して...`}
+             style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white', outline: 'none' }} 
+           />
+           <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginTop: '8px' }}>未入力の場合は、採用から現在までの時間が自動計算されます。</p>
+        </div>
+
         <button type="submit" className="neon-button" style={{ width: '100%', background: '#10b981', justifyContent: 'center', height: '54px' }}>
-           <CheckCircle2 size={18} /> <span>承認して報酬をロック解除</span>
+           <CheckCircle2 size={18} /> <span>承認して報酬をアンロック</span>
         </button>
       </form>
     </motion.div>
@@ -572,33 +553,32 @@ function MessageModal({ task, messages, currentUser, onClose, onSend, newMessage
   return (
     <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '650px', height: '85vh', padding: '48px', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
-         <h3 style={{ fontSize: '1.4rem', fontWeight: '950' }}>セキュア・<span style={{ color }}>スレッド</span></h3>
-         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer' }}><X /></button>
+         <h3 style={{ fontSize: '1.4rem', fontWeight: '950' }}>セキュア・スレッド</h3>
+         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)' }}><X /></button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
          {messages.map((m:any) => (
            <div key={m.id} style={{ alignSelf: m.userId === currentUser.id ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginBottom: '4px', textAlign: m.userId === currentUser.id ? 'right' : 'left' }}>{m.userId === currentUser.id ? 'あなた' : '相手'}</div>
-              <div style={{ padding: '16px 20px', background: m.userId === currentUser.id ? color : 'rgba(255,255,255,0.05)', borderRadius: '18px', borderTopRightRadius: m.userId === currentUser.id ? '4px' : '18px', borderTopLeftRadius: m.userId === currentUser.id ? '18px' : '4px', color: m.userId === currentUser.id ? 'white' : 'white', fontSize: '0.95rem', boxShadow: m.userId === currentUser.id ? `0 10px 20px ${color}20` : 'none' }}>{m.content}</div>
+              <div style={{ padding: '16px 20px', background: m.userId === currentUser.id ? color : 'rgba(255,255,255,0.05)', borderRadius: '18px', color: 'white' }}>{m.content}</div>
            </div>
          ))}
       </div>
       <form onSubmit={onSend} style={{ display: 'flex', gap: '12px' }}>
-         <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="安全なプロトコルを送信..." style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '18px', color: 'white', outline: 'none', fontSize: '0.9rem' }} />
-         <button type="submit" className="neon-button" style={{ width: '60px', height: '60px', background: color, borderRadius: '16px', justifyContent: 'center' }}><Send size={22} /></button>
+         <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="メッセージを送信..." style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: 'none', borderRadius: '16px', padding: '18px', color: 'white' }} />
+         <button type="submit" className="neon-button" style={{ width: '60px', height: '60px', background: color, justifyContent: 'center' }}><Send size={22} /></button>
       </form>
     </motion.div>
   );
 }
 
-function FormField({ label, value, onChange, type = 'text', options = [], placeholder = '' }: any) {
+function FormField({ label, value, onChange, type = 'text', placeholder = '' }: any) {
   return (
-    <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      <label style={{ fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>{label}</label>
+    <div style={{ marginBottom: '24px' }}>
+      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', marginBottom: '10px' }}>{label}</label>
       {type === 'textarea' ? (
-        <textarea value={value} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white', outline: 'none', minHeight: '120px', fontSize: '0.95rem', lineHeight: '1.6' }} />
+        <textarea value={value} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white', minHeight: '100px' }} />
       ) : (
-        <input type={type} value={value} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white', outline: 'none', fontSize: '0.95rem' }} />
+        <input type={type} value={value} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white' }} />
       )}
     </div>
   );
