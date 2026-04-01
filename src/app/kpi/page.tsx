@@ -35,23 +35,24 @@ export default function KPIPage() {
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [expandedFactor, setExpandedFactor] = useState<string | null>(null);
 
+  const fetchKPIData = async () => {
+    try {
+      const [kRes, uRes] = await Promise.all([
+          fetch('/api/kpi'),
+          fetch('/api/users')
+      ]);
+      const kData = await kRes.json();
+      const uData = await uRes.json();
+      setData(kData);
+      setUsers(uData);
+      const savedId = localStorage.getItem('demo-user-id');
+      const user = savedId ? uData.find((u: any) => u.id === savedId) : uData[0];
+      setCurrentUser(user || uData[0]);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
   useEffect(() => {
-    const fetchKPIData = async () => {
-      try {
-        const [kRes, uRes] = await Promise.all([
-            fetch('/api/kpi'),
-            fetch('/api/users')
-        ]);
-        const kData = await kRes.json();
-        const uData = await uRes.json();
-        setData(kData);
-        setUsers(uData);
-        const savedId = localStorage.getItem('demo-user-id');
-        const user = savedId ? uData.find((u: any) => u.id === savedId) : uData[0];
-        setCurrentUser(user || uData[0]);
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
-    };
     fetchKPIData();
   }, []);
 
@@ -101,6 +102,26 @@ export default function KPIPage() {
              <Link href="/profile" className={styles.navItem}><User size={18} /> <span>プロフィール DNA</span></Link>
           </nav>
           <div style={{ flex: 1 }} />
+          <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>デモ・オペレーター切替</div>
+             <select 
+               value={currentUser.id} 
+               onChange={(e) => handleUserChange(e.target.value)} 
+               style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem', marginBottom: '15px' }}
+             >
+               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName} (ランク-{u.rank})</option>)}
+             </select>
+             <button 
+                onClick={async () => {
+                    if (confirm('システム時間（月）を進めますか？発行残高のリセット等が行われます。')) {
+                        const res = await fetch('/api/simulate/next-month', { method: 'POST' });
+                        if (res.ok) { fetchKPIData(); alert('翌月のシミュレーションが完了しました。'); }
+                    }
+                }}
+                style={{ width: '100%', padding: '10px', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: '8px', color: '#6366f1', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                <History size={12} style={{ marginRight: '6px' }} /> 月を進める (Simulation)
+             </button>
+          </div>
        </aside>
 
       <main className={styles.mainScrollArea}>
@@ -157,6 +178,8 @@ export default function KPIPage() {
 
                    <div className="glass-card" style={{ padding: '32px' }}>
                        <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: '950' }}>ミッション履歴・嚴密監査アコーディオン</h3>
+                       <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', marginBottom: '32px' }}>各案件をタップして全11因子の導出計算を解読してください。</p>
+
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           {personalTxs.map((tx: any) => (
                             <div key={tx.id} style={{ border: '1px solid rgba(255,255,255,0.04)', borderRadius: '16px' }}>
@@ -183,6 +206,7 @@ export default function KPIPage() {
                                   </div>
                                   {expandedTx === tx.id ? <ChevronUp size={18} opacity={0.3} /> : <ChevronDown size={18} opacity={0.3} />}
                                </div>
+
                                <AnimatePresence>
                                   {expandedTx === tx.id && (
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
@@ -195,7 +219,7 @@ export default function KPIPage() {
                                                   <NestedFactor id="q" title="Q: 品質承認" value={tx.q} color="#10b981" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="Manual Input Rating" variables={[{ name: 'rating_score', val: tx.q, source: '依頼者の評価', reason: 'アウトプット品質。' }]} />
                                                   <NestedFactor id="ac" title="Ac: 癒着防止" value={tx.ac} color="#fbbf24" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 / (1.0 + same_partner_count * 0.05)" variables={[{ name: 'partner_count', val: 'Audit Check', source: 'System Audit', reason: '特定ペア間取引数。', detailFormula: 'tx_history.filter(pair).length' }]} />
                                                   <NestedFactor id="aa" title="Aa: 活動指標" value={tx.aa} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + log(1.0 + load / avg_load)" variables={[{ name: 'user_load', val: 'Calc', source: 'System Analytics', reason: '30日間負荷量。', detailFormula: 'sum(df_i)' }]} />
-                                                  <NestedFactor id="df" title="Df: 難易度" value={tx.df} color="#ec4899" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + (n_o*0.1) + (n_b*0.1) + (s_req/10)" variables={[{ name: 'n_o', val: tx.rawOutputs || 1, source: '依頼者の設定', reason: '出力数。' },{ name: 'n_b', val: tx.rawBranches || 0, source: '依頼者の設定', reason: '要件分岐。' },{ name: 's_req', val: tx.rawRequiredSkill || '1.0', source: '依頼者の設定', reason: '要求スキルレベル。' }]} />
+                                                  <NestedFactor id="df" title="Df: 難易度" value={tx.df} color="#ec4899" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + (n_o*0.1) + (n_b*0.1) + (s_req/10)" variables={[{ name: 'n_o', val: tx.rawOutputs || 1, source: '依頼者の設定', reason: '要求物の総数。' },{ name: 'n_b', val: tx.rawBranches || 0, source: '依頼者の設定', reason: '要件分岐。' },{ name: 's_req', val: tx.rawRequiredSkill || '1.0', source: '依頼者の設定', reason: '要求スキルレベル。' }]} />
                                                   <NestedFactor id="sf" title="Sf: スキル習熟" value={tx.sf} color="#6366f1" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="EMA_prev * 0.9 + Q_current * 0.1" variables={[{ name: 'ema_level', val: tx.sf, source: 'あなたのキャリア資産', reason: '累次ミッション習熟度。', detailFormula: 'EMA calculation' }]} />
                                                   <NestedFactor id="eb" title="Eb: 効率性" value={tx.eb || 1} color="#10b981" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + max(0, (expected - actual) / expected)" variables={[{ name: 'expected_h', val: tx.rawExpectedHours || 1.0, source: '依頼者の設定', reason: '推定納期。' },{ name: 'actual_h', val: tx.rawActualHours || 'N/A', source: 'Performer Data', reason: '実働時間。', detailFormula: '(exp - act) / exp' }]} />
                                                   <NestedFactor id="rr" title="Rr: ランクアセット" value={tx.rr} color="#fbbf24" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + (current_rank_idx * 0.1)" variables={[{ name: 'rank_idx', val: RANK_LADDER.indexOf(currentUser.rank), source: 'あなたのキャリア資産', reason: 'ランク補正。' }]} />
@@ -212,9 +236,9 @@ export default function KPIPage() {
                 </motion.div>
               ) : (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key="company_top">
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
-                      <div className="glass-card" style={{ padding: '32px', height: '400px', display: 'flex', flexDirection: 'column' }}>
-                         <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>役職別リソース分配状況 (₲)</h3>
+                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', marginBottom: '32px' }}>
+                      <div className="glass-card" style={{ padding: '32px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                         <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>役職別リソース分配 (₲)</h3>
                          <div style={{ flex: 1, position: 'relative' }}><Bar data={{ labels: data.roleLabels, datasets: [{ data: data.roleVolume, backgroundColor: [rankColor, '#a855f7', '#22d3ee', '#10b981'], borderRadius: 12 }] }} options={chartOptions} /></div>
                       </div>
                       <div className="glass-card" style={{ padding: '32px' }}>
@@ -246,7 +270,6 @@ export default function KPIPage() {
                                 ))}
                             </div>
                         </div>
-
                         <div className="glass-card" style={{ padding: '32px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
                                 <Trophy size={20} color={rankColor} />

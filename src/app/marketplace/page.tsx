@@ -209,10 +209,20 @@ export default function Marketplace() {
             <select 
               value={currentUser.id} 
               onChange={(e) => handleUserChange(e.target.value)}
-              style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem', fontWeight: '900' }}
+              style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem', fontWeight: '900', marginBottom: '15px' }}
             >
               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#0a0a0f' }}>{u.anonymousName} (ランク-{u.rank})</option>)}
             </select>
+            <button 
+                onClick={async () => {
+                    if (confirm('システム時間（月）を進めますか？発行残高のリセット等が行われます。')) {
+                        const res = await fetch('/api/simulate/next-month', { method: 'POST' });
+                        if (res.ok) { fetchData(); alert('翌月のシミュレーションが完了しました。'); }
+                    }
+                }}
+                style={{ width: '100%', padding: '10px', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: '8px', color: '#6366f1', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                <History size={12} style={{ marginRight: '6px' }} /> 月を進める (Simulation)
+             </button>
          </div>
       </aside>
 
@@ -243,7 +253,7 @@ export default function Marketplace() {
 
         <nav style={{ display: 'flex', gap: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '40px' }}>
            <TabItem active={view === 'browse'} onClick={() => setView('browse')} text="案件をさがす" color={rankColor} />
-           <TabItem active={view === 'my-issued'} onClick={() => setView('my-issued')} text="発行した案件" color={rankColor} />
+           <TabItem active={view === 'my-issued'} onClick={() => setView('my-issued'} text="発行した案件" color={rankColor} />
            <TabItem active={view === 'my-bids'} onClick={() => setView('my-bids')} text="入札中の案件" color={rankColor} />
         </nav>
 
@@ -378,8 +388,8 @@ export default function Marketplace() {
                                       </div>
                                    </div>
                                    <button onClick={() => handleAcceptBid(task.id, bid.id)} style={{ background: bColor, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 24px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold' }}>採用する</button>
-                                </div>
-                             </motion.div>
+                                 </div>
+                              </motion.div>
                            );
                         })}
                      </div>

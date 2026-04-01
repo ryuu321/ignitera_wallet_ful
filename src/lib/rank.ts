@@ -20,18 +20,29 @@ export const getRankCorrection = (rank: string) => {
 };
 
 /**
- * 月次締め処理
+ * 月次締め処理 (月を進めるシミュレーション)
  */
 export const finalizeMonth = async () => {
   const users = await prisma.user.findMany();
   
   for (const user of users) {
+    // ランク維持の判定などは複雑なため、現状はスコアのスライドとFlowリセットを優先
     await prisma.user.update({
       where: { id: user.id },
       data: {
         lastMonthScore: user.monthlyScore,
         monthlyScore: 0,
-        graceMonths: 0 // 月次締め時に猶予期間リセット（運用ルールによる）
+        balanceFlow: 1000, // 月次の発行可能枠を再付与
+        graceMonths: 0 
+      }
+    });
+
+    // 履歴レコードを残す (KPI分析用)
+    await prisma.kPILog.create({
+      data: {
+        metricName: `MONTHLY_FINALIZE_${user.anonymousName}`,
+        value: user.monthlyScore,
+        timestamp: new Date()
       }
     });
   }
@@ -54,14 +65,16 @@ export const finalizeSeason = async (seasonId: string) => {
       }
     });
     
-    // シーズンリセット
+    // シーズンリセット (全てのパラメータを初期化)
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        rank: 'Z', // 必要に応じて初期化
+        rank: 'Z',
         monthlyScore: 0,
         totalScore: 0,
         lastMonthScore: 0,
+        balanceFlow: 1000,
+        balanceStock: 0,
         graceMonths: 0
       }
     });
