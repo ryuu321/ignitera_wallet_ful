@@ -164,7 +164,7 @@ export default function Marketplace() {
 
   if (loading || !currentUser) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050510', color: '#6366f1' }}>ニューラル・マーケット同期中...</div>;
 
-  const filteredTasks = tasks.filter(t => {
+  const filteredTasks = tasks.filter((t: any) => {
     if (view === 'my-issued') return t.requesterId === currentUser.id;
     if (view === 'my-bids') return t.bids?.some((b: any) => b.bidderId === currentUser.id);
     return t.requesterId !== currentUser.id;
@@ -382,7 +382,7 @@ function MetricItem({ icon, label, value }: any) {
 
 function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, color }: any) {
   const toggleSkill = (name: string) => {
-    const next = newTask.tags.includes(name) ? newTask.tags.filter(t => t !== name) : [...newTask.tags, name];
+    const next = newTask.tags.includes(name) ? newTask.tags.filter((t: string) => t !== name) : [...newTask.tags, name];
     setNewTask({...newTask, tags: next});
   };
 
@@ -421,7 +421,7 @@ function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, col
         <div style={{ marginBottom: '32px' }}>
             <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '900', letterSpacing: '1px' }}>必要スキル・マトリクス</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                {masterSkills.map(s => (
+                {masterSkills.map((s: any) => (
                     <button key={s.id} type="button" onClick={() => toggleSkill(s.name)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid', borderColor: newTask.tags.includes(s.name) ? color : 'rgba(255,255,255,0.1)', background: newTask.tags.includes(s.name) ? `${color}20` : 'transparent', color: newTask.tags.includes(s.name) ? 'white' : 'rgba(255,255,255,0.4)', cursor: 'pointer', transition: '0.2s' }}>
                         {s.name}
                     </button>
