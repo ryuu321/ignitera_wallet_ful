@@ -33,8 +33,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         await tx.user.update({
           where: { id: task.requesterId },
           data: {
-            balanceFlow: { decrement: canDeductFlow },
-            balanceStock: { decrement: remainingDeficit }
+            balanceFlow: requester.balanceFlow - canDeductFlow,
+            balanceStock: requester.balanceStock - remainingDeficit
           }
         });
       } else if (diff < 0) {
