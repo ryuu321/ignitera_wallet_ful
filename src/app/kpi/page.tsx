@@ -119,18 +119,34 @@ export default function KPIPage() {
         <section style={{ padding: '32px 0' }}>
             <AnimatePresence mode="wait">
               {activeTab === 'personal' ? (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="personal_top">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key="personal_top">
                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '32px', marginBottom: '32px' }}>
                       <div className="glass-card" style={{ padding: '32px' }}>
-                        <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>個人マトリクス・アセット</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                           <FactorInfo label="Sf (Skill DNA)" value={currentUser.skillLevel} color="#6366f1" isCumulative />
-                           <FactorInfo label="Rr (Rank Asset)" value={1.0 + (RANK_LADDER.indexOf(currentUser.rank)*0.1)} color="#fbbf24" isCumulative />
-                           <FactorInfo label="Q (Quality Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.q,0)/personalTxs.length : 1} color="#10b981" />
-                           <FactorInfo label="Eb (Efficiency Avg)" value={personalTxs.length > 0 ? (personalTxs.reduce((a:any,b:any)=>a+(b.eb||1),0)/personalTxs.length) : 1} color="#22d3ee" />
+                        <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>個人パフォーマンス因子 (平均/アセット)</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <div>
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '950', letterSpacing: '1px' }}>キャリア資産 (蓄積系)</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <FactorInfo label="Sf (Skill DNA)" value={currentUser.skillLevel} color="#6366f1" isCumulative />
+                                    <FactorInfo label="Rr (Rank Asset)" value={1.0 + (RANK_LADDER.indexOf(currentUser.rank)*0.1)} color="#fbbf24" isCumulative />
+                                    <FactorInfo label="Aa (Activity Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.aa,0)/personalTxs.length : 1} color="#a855f7" isCumulative />
+                                    <FactorInfo label="Wd (Diversity Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.wd,0)/personalTxs.length : 1} color="#22d3ee" isCumulative />
+                                    <FactorInfo label="Ac (Integrity Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.ac,0)/personalTxs.length : 1} color="#fbbf24" isCumulative />
+                                </div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '950', letterSpacing: '1px' }}>実行パフォーマンス (変動系)</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <FactorInfo label="Q (Quality Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.q,0)/personalTxs.length : 1} color="#10b981" />
+                                    <FactorInfo label="Eb (Efficiency Avg)" value={personalTxs.length > 0 ? (personalTxs.reduce((a:any,b:any)=>a+(b.eb||1),0)/personalTxs.length) : 1} color="#22d3ee" />
+                                    <FactorInfo label="Wu (Uniqueness Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.wu,0)/personalTxs.length : 1} color={rankColor} />
+                                    <FactorInfo label="Df (Difficulty Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.df,0)/personalTxs.length : 1} color="#ec4899" />
+                                    <FactorInfo label="Pc (Expectation Avg)" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+b.pc,0)/personalTxs.length : 1} color="#a855f7" />
+                                </div>
+                            </div>
                         </div>
                       </div>
-                      <div className="glass-card" style={{ padding: '32px', height: '300px', display: 'flex', flexDirection: 'column' }}>
+                      <div className="glass-card" style={{ padding: '32px', height: '100%', display: 'flex', flexDirection: 'column' }}>
                          <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>直近スコア推移 (Formula-S Timeline)</h3>
                          <div style={{ flex: 1, position: 'relative' }}>
                             <Line data={{
@@ -143,7 +159,7 @@ export default function KPIPage() {
 
                    <div className="glass-card" style={{ padding: '32px' }}>
                        <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: '950' }}>ミッション履歴・嚴密監査アコーディオン</h3>
-                       <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', marginBottom: '32px' }}>各案件をタップして深層因子を監査してください。2段階の構造により変数の導出理由を解読可能です。</p>
+                       <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', marginBottom: '32px' }}>各案件をタップして全11因子の導出計算を解読してください。</p>
 
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           {personalTxs.map((tx: any) => (
@@ -154,15 +170,19 @@ export default function KPIPage() {
                                >
                                   <div style={{ display: 'flex', gap: '32px', alignItems: 'center', flex: 1 }}>
                                      <div style={{ fontSize: '0.85rem', width: '80px', color: 'rgba(255,255,255,0.3)' }}>{new Date(tx.timestamp).toLocaleDateString()}</div>
-                                     <div style={{ fontWeight: '950', fontSize: '1rem', width: '70px' }}>₲{tx.amount}</div>
-                                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                        <div style={{ fontSize: '0.9rem', padding: '6px 16px', background: `${rankColor}20`, color: rankColor, borderRadius: '10px', fontWeight: '950', border: `1px solid ${rankColor}30` }}>S: {tx.finalScore.toFixed(1)}</div>
-                                        <div style={{ display: 'flex', gap: '6px', opacity: expandedTx === tx.id ? 0.3 : 1 }}>
-                                           <Badge label={`Wu ${tx.wu.toFixed(1)}`} color={rankColor} />
-                                           <Badge label={`Q ${tx.q.toFixed(1)}`} color="#10b981" />
-                                           <Badge label={`Eb ${tx.eb.toFixed(1)}`} color="#22d3ee" />
-                                           <Badge label={`Df ${tx.df.toFixed(1)}`} color="#ec4899" />
-                                        </div>
+                                     <div style={{ fontWeight: '950', fontSize: '1.2rem', color: rankColor, width: '120px' }}>S: {tx.finalScore.toFixed(1)}</div>
+                                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        <Badge label={`C ${tx.amount}`} color="white" />
+                                        <Badge label={`Wu ${tx.wu.toFixed(1)}`} color={rankColor} />
+                                        <Badge label={`Wd ${tx.wd.toFixed(1)}`} color="#22d3ee" />
+                                        <Badge label={`Pc ${tx.pc.toFixed(1)}`} color="#a855f7" />
+                                        <Badge label={`Q ${tx.q.toFixed(1)}`} color="#10b981" />
+                                        <Badge label={`Ac ${tx.ac.toFixed(1)}`} color="#fbbf24" />
+                                        <Badge label={`Aa ${tx.aa.toFixed(1)}`} color={rankColor} />
+                                        <Badge label={`Df ${tx.df.toFixed(1)}`} color="#ec4899" />
+                                        <Badge label={`Sf ${tx.sf.toFixed(1)}`} color="#6366f1" />
+                                        <Badge label={`Eb ${tx.eb.toFixed(1)}`} color="#10b981" />
+                                        <Badge label={`Rr ${tx.rr.toFixed(1)}`} color="#fbbf24" />
                                      </div>
                                   </div>
                                   {expandedTx === tx.id ? <ChevronUp size={18} opacity={0.3} /> : <ChevronDown size={18} opacity={0.3} />}
@@ -171,63 +191,82 @@ export default function KPIPage() {
                                <AnimatePresence>
                                   {expandedTx === tx.id && (
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
-                                       <div style={{ padding: '0 32px 40px 144px' }}>
+                                       <div style={{ padding: '0 24px 32px 144px' }}>
                                           <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '40px' }}>
-                                              <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}><Terminal size={16} opacity={0.3} /> <span style={{ fontSize: '0.7rem', letterSpacing: '2px', opacity: 0.3 }}>DEEP_AUDIT_TRACE</span></div>
-                                              
                                               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                   <NestedFactor 
-                                                      id="wu" title="Wu: 独自性" value={tx.wu} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor}
+                                                      id="wu" title="Wu: 独自性 (Uniqueness Factor)" value={tx.wu} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor}
                                                       formula="1.0 + max(0, 5.0 - log2(n_30d)) / 10.0"
                                                       variables={[
-                                                          { name: 'n_30d', val: tx.rawFrequency || 1, source: 'System Registry', reason: `直近30日間に全社で ${tx.rawFrequency || 1} 回発行されたミッション。希少価値が高いプロトコルほど係数がブーストされます。` }
+                                                          { name: 'n_30d', val: tx.rawFrequency || 1, source: 'System Registry', reason: '直近30日間の全社タスク頻度。', detailFormula: 'log2(req_count)' }
                                                       ]}
                                                   />
                                                   <NestedFactor 
-                                                      id="wd" title="Wd: 分散性 (依存度抑制)" value={tx.wd} color="#22d3ee" expanded={expandedFactor} setExpanded={setExpandedFactor}
+                                                      id="wd" title="Wd: 分散性 (Boss Dependency)" value={tx.wd} color="#22d3ee" expanded={expandedFactor} setExpanded={setExpandedFactor}
                                                       formula="1.0 - (max_share^2 * 0.2)"
                                                       variables={[
-                                                          { name: 'max_share', val: tx.rawMaxShare || '0.12', source: 'Ledger Audit', reason: `現時点での特定依頼者への集中度。${((tx.rawMaxShare || 0.12)*100).toFixed(1)}% のタスクが同一の依頼者に依存しています。組織としての公平性を保つため、依存度が高いと負の補正が働きます。` }
+                                                          { name: 'max_share', val: tx.rawMaxShare || '0.12', source: 'Ledger Audit', reason: `特定依頼者への集中度。`, detailFormula: 'partner_count / total_completed' }
+                                                      ]}
+                                                  />
+                                                  <NestedFactor 
+                                                      id="pc" title="Pc: 役職期待 (Role Multiplier)" value={tx.pc} color="#a855f7" expanded={expandedFactor} setExpanded={setExpandedFactor}
+                                                      formula="1.0 + RoleWeight"
+                                                      variables={[
+                                                          { name: 'Role', val: 'GENERAL', source: '依頼者の設定', reason: 'ターゲット役職の事前定義。' }
                                                       ]}
                                                   />
                                                   <NestedFactor 
                                                       id="q" title="Q: 品質承認" value={tx.q} color="#10b981" expanded={expandedFactor} setExpanded={setExpandedFactor}
-                                                      formula="Rating Input (0.1 - 1.5)"
+                                                      formula="Manual Input Rating"
                                                       variables={[
-                                                          { name: 'quality_score', val: tx.q, source: '依頼者の評価', reason: '「業務完了承認」の際に、依頼者がプロダクトのアウトプット品質を評価した確定値です。' }
+                                                          { name: 'rating_score', val: tx.q, source: '依頼者の評価', reason: 'プロダクトアウトプットの最終評価。' }
+                                                      ]}
+                                                  />
+                                                  <NestedFactor 
+                                                      id="ac" title="Ac: 癒着防止 (Integrity)" value={tx.ac} color="#fbbf24" expanded={expandedFactor} setExpanded={setExpandedFactor}
+                                                      formula="1.0 / (1.0 + same_partner_count * 0.05)"
+                                                      variables={[
+                                                          { name: 'partner_count', val: 'Audit Check', source: 'System Audit', reason: '特定ペア間の取引累積数。', detailFormula: 'tx_history.filter(pair).length' }
+                                                      ]}
+                                                  />
+                                                  <NestedFactor 
+                                                      id="aa" title="Aa: 活動指標 (Activity)" value={tx.aa} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor}
+                                                      formula="1.0 + log(1.0 + load / avg_load)"
+                                                      variables={[
+                                                          { name: 'user_load', val: 'Calc', source: 'System Analytics', reason: '30日間の合計難易度負荷量。', detailFormula: 'sum(df_i)' }
                                                       ]}
                                                   />
                                                   <NestedFactor 
                                                       id="df" title="Df: 難易度" value={tx.df} color="#ec4899" expanded={expandedFactor} setExpanded={setExpandedFactor}
                                                       formula="1.0 + (n_o*0.1) + (n_b*0.1) + (s_req/10)"
                                                       variables={[
-                                                          { name: 'n_o (Outputs)', val: tx.rawOutputs || 1, source: '依頼者の設定', reason: '要求された提出物の数。' },
-                                                          { name: 'n_b (Branches)', val: tx.rawBranches || 0, source: '依頼者の設定', reason: '要件分岐の複雑性（条件分岐数）。' },
-                                                          { name: 's_req (Required Skill)', val: tx.rawRequiredSkill || '1.0', source: '依頼者の設定', reason: `依頼者がこのミッションに要求した DNA 到達基準 (Expertise Level: ${tx.rawRequiredSkill})。要求レベルが高いほど基底難易度が上昇します。` }
+                                                          { name: 'n_o (Outputs)', val: tx.rawOutputs || 1, source: '依頼者の設定', reason: '要求物の総数。' },
+                                                          { name: 'n_b (Branches)', val: tx.rawBranches || 0, source: '依頼者の設定', reason: '要件分岐の深度。' },
+                                                          { name: 's_req (Skill Req)', val: tx.rawRequiredSkill || '1.0', source: '依頼者の設定', reason: '要求スキルの習熟水準。' }
                                                       ]}
                                                   />
                                                   <NestedFactor 
-                                                      id="sf" title="Sf: スキル習熟 (累次ミッション)" value={tx.sf} color="#6366f1" expanded={expandedFactor} setExpanded={setExpandedFactor}
-                                                      formula="Exponential Moving Average (EMA)"
+                                                      id="sf" title="Sf: スキル習熟 (EMA)" value={tx.sf} color="#6366f1" expanded={expandedFactor} setExpanded={setExpandedFactor}
+                                                      formula="EMA_prev * 0.9 + Q_current * 0.1"
                                                       variables={[
-                                                          { name: 'ema_level', val: tx.sf.toFixed(3), source: 'あなたのキャリア資産', reason: `「累次ミッション」とは、これまでにあなたが完遂した同一タグの全ミッション履歴を指します。これら過去のパフォーマンスQを蓄積・平均した数値が「習熟度（Sf）」として現れます。` }
+                                                          { name: 'ema_level', val: tx.sf, source: 'あなたのキャリア資産', reason: '累次ミッション（過去の同一タグ履歴）の加重平均。', detailFormula: 'EMA calculation over historical Q' }
                                                       ]}
                                                   />
                                                   <NestedFactor 
                                                       id="eb" title="Eb: 効率性" value={tx.eb || 1} color="#10b981" expanded={expandedFactor} setExpanded={setExpandedFactor}
                                                       formula="1.0 + max(0, (expected - actual) / expected)"
                                                       variables={[
-                                                          { name: 'expected_h', val: tx.rawExpectedHours || 1.0, source: '依頼者の設定', reason: '案件発行時に設定された、標準的な想定納期（時間）です。' },
-                                                          { name: 'actual_h', val: tx.rawActualHours ? tx.rawActualHours.toFixed(2) : 'N/A', source: 'Performer Data', reason: tx.rawActualHours ? `実際の完遂に要した時間。想定よりも ${((tx.rawExpectedHours - tx.rawActualHours)/tx.rawExpectedHours*100).toFixed(1)}% 早く完遂したためブーストが発生しました。` : '【N/A】過去の移行データ、または実働時間が入力されずに承認されたため、標準効率(1.0)として処理されました。' }
+                                                          { name: 'expected_h', val: tx.rawExpectedHours || 1.0, source: '依頼者の設定', reason: '推定納期。' },
+                                                          { name: 'actual_h', val: tx.rawActualHours || 'N/A', source: 'Performer Data', reason: '実働時間。', detailFormula: '(exp - act) / exp' }
                                                       ]}
                                                   />
-                                              </div>
-                                              
-                                              <div style={{ marginTop: '50px', padding: '40px', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: `1px solid ${rankColor}30` }}>
-                                                  <div style={{ fontSize: '1.8rem', fontWeight: '950', marginBottom: '15px' }}>{tx.finalScore.toFixed(3)} <span style={{ fontSize: '0.8rem', color: rankColor, letterSpacing: '1px' }}>S-Points</span></div>
-                                                  <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', lineHeight: '1.8' }}>
-                                                     Equation: C({tx.amount}) x Wu({tx.wu}) x Wd({tx.wd}) x Pc({tx.pc}) x Q({tx.q}) x Ac({tx.ac}) x Aa({tx.aa}) x (Df({tx.df}) + Sf({tx.sf})) x Eb({tx.eb||1}) x Rr({tx.rr})
-                                                  </div>
+                                                  <NestedFactor 
+                                                      id="rr" title="Rr: ランクアセット" value={tx.rr} color="#fbbf24" expanded={expandedFactor} setExpanded={setExpandedFactor}
+                                                      formula="1.0 + (current_rank_idx * 0.1)"
+                                                      variables={[
+                                                          { name: 'rank_idx', val: RANK_LADDER.indexOf(currentUser.rank), source: 'あなたのキャリア資産', reason: '現在の階層ステータス補正。' }
+                                                      ]}
+                                                  />
                                               </div>
                                           </div>
                                        </div>
@@ -240,10 +279,18 @@ export default function KPIPage() {
                    </div>
                 </motion.div>
               ) : (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="company_top">
-                   <div className="glass-card" style={{ padding: '32px', height: '420px', marginBottom: '32px' }}>
-                      <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>役職別リソース分配状況 (₲)</h3>
-                      <div style={{ flex: 1, position: 'relative' }}><Bar data={{ labels: data.roleLabels, datasets: [{ data: data.roleVolume, backgroundColor: [rankColor, '#a855f7', '#22d3ee', '#10b981'], borderRadius: 12 }] }} options={chartOptions} /></div>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key="company_top">
+                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+                      <div className="glass-card" style={{ padding: '32px', height: '420px', display: 'flex', flexDirection: 'column' }}>
+                         <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>役職別リソース分配 (₲)</h3>
+                         <div style={{ flex: 1, position: 'relative' }}><Bar data={{ labels: data.roleLabels, datasets: [{ data: data.roleVolume, backgroundColor: [rankColor, '#a855f7', '#22d3ee', '#10b981'], borderRadius: 12 }] }} options={chartOptions} /></div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '32px' }}>
+                          <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>全社平均評価因子 (Global Matrix)</h3>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                              {Object.entries(data.avgFactors || {}).map(([k, v]: any) => <FactorInfo key={k} label={k.toUpperCase()} value={v} color={rankColor} />)}
+                          </div>
+                      </div>
                    </div>
                 </motion.div>
               )}
@@ -257,20 +304,24 @@ export default function KPIPage() {
 function NestedFactor({ id, title, value, color, formula, variables, expanded, setExpanded }: any) {
     const isThisExpanded = expanded === id;
     return (
-        <div style={{ border: '1px solid rgba(255,255,255,0.05)', borderRadius: '18px', overflow: 'hidden', background: isThisExpanded ? 'rgba(255,255,255,0.02)' : 'transparent', transition: '0.3s' }}>
-            <div onClick={() => setExpanded(isThisExpanded ? null : id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} /><span style={{ fontSize: '0.95rem', fontWeight: 'bold' }}>{title}</span></div>
+        <div style={{ border: '1px solid rgba(255,255,255,0.05)', borderRadius: '18px', overflow: 'hidden', background: isThisExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+            <div onClick={() => setExpanded(isThisExpanded ? null : id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} /><span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{title}</span></div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><span style={{ fontSize: '1.1rem', fontWeight: '950', color }}>x{value.toFixed(2)}</span>{isThisExpanded ? <ChevronUp size={14} opacity={0.3} /> : <ChevronDown size={14} opacity={0.3} />}</div>
             </div>
             <AnimatePresence>{isThisExpanded && (
                 <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
                     <div style={{ padding: '0 24px 24px 44px' }}><div style={{ padding: '24px', background: 'rgba(0,0,0,0.3)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'monospace' }}>COMPUTATION_LOGIC: {formula}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'monospace' }}>MATH_LOGIC: {formula}</div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             {variables.map((v: any) => (
                                 <div key={v.name} style={{ display: 'flex', gap: '24px' }}>
                                     <div style={{ width: '130px' }}><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>{v.name}</div><div style={{ fontSize: '1.1rem', fontWeight: '950' }}>{v.val}</div></div>
-                                    <div style={{ flex: 1 }}><div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '5px', background: v.source.includes('依頼者') ? `${color}40` : 'rgba(255,255,255,0.05)', color: v.source.includes('依頼者') ? 'white' : 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>{v.source}</span></div><p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: '1.6' }}>{v.reason}</p></div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '5px', background: v.source.includes('依頼者') ? `${color}40` : 'rgba(255,255,255,0.05)', color: v.source.includes('依頼者') ? 'white' : 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>{v.source}</span></div>
+                                        <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: '1.6' }}>{v.reason}</p>
+                                        {v.detailFormula && <div style={{ marginTop: '8px', fontSize: '0.65rem', color: color, fontFamily: 'monospace', opacity: 0.8 }}>Sub_Formula: {v.detailFormula}</div>}
+                                    </div>
                                 </div>
                             ))}
                         </div>
