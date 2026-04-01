@@ -42,7 +42,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const tags = JSON.parse(t.tags || '[]');
       tags.forEach((tag: string) => tagFreqs[tag] = (tagFreqs[tag] || 0) + 1);
     });
-    const taskTags = JSON.parse(tAny.tags || '[]');
+    let taskTags = [];
+    try {
+        const parsed = JSON.parse(tAny.tags || '[]');
+        taskTags = Array.isArray(parsed) ? parsed : [];
+    } catch(e) { taskTags = []; }
     const currentTaskFreq = Math.max(1, ...taskTags.map((tag: string) => tagFreqs[tag] || 1));
     const allFreqs = Object.values(tagFreqs).length > 0 ? Object.values(tagFreqs) : [1];
 
@@ -174,11 +178,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           rank: nextRank,
           skills: (() => {
              let curSkills = [];
-             try { curSkills = JSON.parse(uAny.skills || '[]'); } catch(e) { curSkills = []; }
+             try { 
+                 const parsed = JSON.parse(uAny.skills || '[]'); 
+                 curSkills = Array.isArray(parsed) ? parsed : [];
+             } catch(e) { curSkills = []; }
+
              if (curSkills.length > 0 && typeof curSkills[0] === 'string') {
                  curSkills = curSkills.map((s: string) => ({ name: s, grade: 'GRAY' }));
              }
-             const tTags = JSON.parse(tAny.tags || '[]');
+
+             let tTags = [];
+             try {
+                const parsedTags = JSON.parse(tAny.tags || '[]');
+                tTags = Array.isArray(parsedTags) ? parsedTags : [];
+             } catch(e) { tTags = []; }
+
              tTags.forEach((tagName: string) => {
                  const existing = curSkills.find((s: any) => s.name === tagName);
                  if (existing) {
