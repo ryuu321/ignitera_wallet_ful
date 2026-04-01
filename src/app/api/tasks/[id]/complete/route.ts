@@ -66,7 +66,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // [Aa] Activity
     const allRecentRecentTxs = await prisma.transaction.findMany({
        where: { timestamp: { gte: thirtyDaysAgo } },
-       select: { df: true, toUserId: true } // df holds difficulty value
+       select: { df: true, toUserId: true }
     });
     const userLoads: Record<string, number> = {};
     allRecentRecentTxs.forEach(tx => userLoads[tx.toUserId] = (userLoads[tx.toUserId] || 0) + (tx.df || 0));
@@ -77,14 +77,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       allRecentRecentTxs.reduce((a, b) => a + (b.df || 0), 0) / allRecentRecentTxs.length : 1.0;
 
     // [Sf] Skill Factor
-    const performerSkills = (await prisma.user.findMany({
+    const performerSkillRecords = (await prisma.user.findMany({
       where: { tasksAssigned: { some: { tags: { contains: taskTags[0] || '' }, status: 'COMPLETED' } } },
       select: { skillLevel: true }
-    })).map(u => u.skillLevel);
+    }));
+    const performerSkills = performerSkillRecords.map(u => u.skillLevel);
     const medianPastSkill = median(performerSkills.length > 0 ? performerSkills : [1.0]);
 
     // --- 2. EXECUTE ALGORITHM S ---
-    const actualHours = inputActualHours || (now.getTime() - task.updatedAt.getTime()) / (1000 * 3600);
+    const actualHours = inputActualHours ? parseFloat(inputActualHours as any) : (now.getTime() - task.updatedAt.getTime()) / (1000 * 3600);
 
     const { S, components, metrics } = calculateAlgorithmS({
       reward: task.baseReward,
@@ -115,6 +116,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // --- 3. ATOMIC UPDATE & AUDIT ---
     const newSkillLevel = updateSkillEMA(uAny.skillLevel || 1.0, metrics.D, components.Q);
 
+    const currentMonthlyScore = (uAny.monthlyScore || 0) + S;
+    let currentRankIdx = RANK_LADDER.indexOf(uAny.rank || 'Z');
+    let nextRank = uAny.rank || 'Z';
+    
+    while (currentRankIdx < RANK_LADDER.length - 1) {
+      const potentialNextRank = RANK_LADDER[currentRankIdx + 1];
+      const threshold = getPromotionThreshold(potentialNextRank);
+      if (currentMonthlyScore >= threshold) {
+        nextRank = potentialNextRank;
+        currentRankIdx++;
+      } else {
+        break;
+      }
+    }
+
     await prisma.$transaction([
       prisma.transaction.create({
         data: {
@@ -133,7 +149,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           sf: components.Sf,
           eb: components.Eb,
           rr: components.Rr,
-          // New Audit Telemetry
           rawExpectedHours: tAny.expectedHours || 1.0,
           rawActualHours: actualHours,
           rawOutputs: tAny.outputs || 1,
@@ -143,7 +158,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           rawFrequency: currentTaskFreq,
           rawMaxShare: maxReqShare,
           timestamp: now
-        }
+        } as any
       }),
       prisma.task.update({
         where: { id: taskId },
@@ -151,51 +166,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }),
       prisma.user.update({
         where: { id: task.assigneeId },
-        data: (() => {
-          const currentMonthlyScore = (uAny.monthlyScore || 0) + S;
-          let currentRankIdx = RANK_LADDER.indexOf(uAny.rank || 'Z');
-          let nextRank = uAny.rank || 'Z';
-          
-          while (currentRankIdx < RANK_LADDER.length - 1) {
-            const potentialNextRank = RANK_LADDER[currentRankIdx + 1];
-            const threshold = getPromotionThreshold(potentialNextRank);
-            if (currentMonthlyScore >= threshold) {
-              nextRank = potentialNextRank;
-              currentRankIdx++;
-            } else {
-              break;
-            }
-          }
-
-          return {
-            balanceStock: { increment: task.baseReward },
-            totalScore: { increment: S },
-            monthlyScore: { increment: S },
-            skillLevel: newSkillLevel,
-            rank: nextRank,
-            skills: (() => {
-               let curSkills = [];
-               try { curSkills = JSON.parse(uAny.skills || '[]'); } catch(e) { curSkills = []; }
-               if (curSkills.length > 0 && typeof curSkills[0] === 'string') {
-                   curSkills = curSkills.map((s: string) => ({ name: s, grade: 'GRAY' }));
-               }
-               const tTags = JSON.parse(tAny.tags || '[]');
-               tTags.forEach((tagName: string) => {
-                   const existing = curSkills.find((s: any) => s.name === tagName);
-                   if (existing) {
-                       if (existing.grade === 'GRAY') existing.grade = 'BRONZE';
-                   } else {
-                       curSkills.push({ name: tagName, grade: 'BRONZE' });
-                   }
-               });
-               return JSON.stringify(curSkills);
-            })()
-          };
-        })()
-      }),
-      prisma.user.update({
-        where: { id: task.requesterId },
-        data: { balanceFlow: { decrement: task.baseReward } }
+        data: {
+          balanceStock: { increment: task.baseReward },
+          totalScore: { increment: S },
+          monthlyScore: { increment: S },
+          skillLevel: newSkillLevel,
+          rank: nextRank,
+          skills: (() => {
+             let curSkills = [];
+             try { curSkills = JSON.parse(uAny.skills || '[]'); } catch(e) { curSkills = []; }
+             if (curSkills.length > 0 && typeof curSkills[0] === 'string') {
+                 curSkills = curSkills.map((s: string) => ({ name: s, grade: 'GRAY' }));
+             }
+             const tTags = JSON.parse(tAny.tags || '[]');
+             tTags.forEach((tagName: string) => {
+                 const existing = curSkills.find((s: any) => s.name === tagName);
+                 if (existing) {
+                     if (existing.grade === 'GRAY') existing.grade = 'BRONZE';
+                 } else {
+                     curSkills.push({ name: tagName, grade: 'BRONZE' });
+                 }
+             });
+             return JSON.stringify(curSkills);
+          })()
+        } as any
       })
     ]);
 
