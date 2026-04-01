@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart3, TrendingUp, Zap, Briefcase, User, Calculator, ChevronDown, ChevronUp, Clock, Target, Layers, Cpu, Brain, ShieldCheck, Activity, Award, LayoutDashboard, Settings, Info, Search
+  BarChart3, TrendingUp, Zap, Briefcase, User, Calculator, ChevronDown, ChevronUp, Clock, Target, Layers, Cpu, Brain, ShieldCheck, Activity, Award, LayoutDashboard, Settings, Info, Search, Terminal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -75,13 +75,12 @@ export default function KPIPage() {
       legend: { display: false },
       tooltip: { 
         backgroundColor: 'rgba(17, 24, 39, 0.9)', 
-        borderColor: 'rgba(255, 255, 255, 0.1)', 
-        borderWidth: 1, padding: 12, titleColor: rankColor
+        padding: 12, titleColor: rankColor
       }
     },
     scales: {
       y: { grid: { color: 'rgba(255, 255, 255, 0.03)' }, ticks: { color: 'rgba(255, 255, 255, 0.4)' } },
-      x: { grid: { display: false }, ticks: { color: 'rgba(255, 255, 255, 0.4)', autoSkip: true, maxTicksLimit: 7 } }
+      x: { grid: { display: false }, ticks: { color: 'rgba(255, 255, 255, 0.4)' } }
     }
   };
 
@@ -118,7 +117,7 @@ export default function KPIPage() {
           </nav>
           <div style={{ flex: 1 }} />
           <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>デモ・オペレーター切替</div>
+             <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>デモ・オペレータ切替</div>
              <select value={currentUser.id} onChange={(e) => handleUserChange(e.target.value)} style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.85rem' }}>
                {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName}</option>)}
              </select>
@@ -179,7 +178,8 @@ export default function KPIPage() {
                 </section>
 
                 <div className="glass-card" style={{ padding: '32px' }}>
-                   <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>あなたのミッション履歴</h3>
+                   <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: '950' }}>あなたのミッション履歴</h3>
+                   <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', marginBottom: '24px' }}>行をタップすると、アルゴリズムの厳密な算出変数を可視化します。</p>
                    
                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {personalTxs.map((tx: any) => (
@@ -195,48 +195,102 @@ export default function KPIPage() {
                              <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flex: 1 }}>
                                 <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', width: '90px' }}>{new Date(tx.timestamp).toLocaleDateString()}</div>
                                 <div style={{ fontWeight: '900', fontSize: '1rem', width: '80px' }}>₲{tx.amount}</div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
-                                    <div style={{ fontSize: '0.8rem', padding: '6px 14px', background: `${rankColor}20`, color: rankColor, borderRadius: '8px', fontWeight: '950', border: `1px solid ${rankColor}30`, boxShadow: `0 0 15px ${rankColor}10` }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <div style={{ fontSize: '0.8rem', padding: '6px 14px', background: `${rankColor}20`, color: rankColor, borderRadius: '8px', fontWeight: '950', border: `1px solid ${rankColor}30` }}>
                                         S: {tx.finalScore.toFixed(1)}
                                     </div>
-                                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
                                         <Badge label={`Wu ${tx.wu.toFixed(1)}`} color={rankColor} />
                                         <Badge label={`Q ${tx.q.toFixed(1)}`} color="#10b981" />
                                         <Badge label={`Eb ${(tx.eb || 1).toFixed(1)}`} color="#22d3ee" />
                                         <Badge label={`Df ${tx.df.toFixed(1)}`} color="#ec4899" />
-                                        <Badge label={`Ac ${tx.ac.toFixed(1)}`} color="#fbbf24" />
-                                        <Badge label={`Sf ${tx.sf.toFixed(1)}`} color="#6366f1" />
                                     </div>
                                 </div>
                              </div>
-                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)' }}>{expandedTx === tx.id ? '詳細を閉じる' : '算出詳細'}</div>
-                                {expandedTx === tx.id ? <ChevronUp size={16} opacity={0.5} /> : <ChevronDown size={16} opacity={0.5} />}
-                             </div>
+                             {expandedTx === tx.id ? <ChevronUp size={16} opacity={0.5} /> : <ChevronDown size={16} opacity={0.5} />}
                           </div>
 
                           <AnimatePresence>
                             {expandedTx === tx.id && (
                               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
                                  <div style={{ padding: '0 32px 40px 144px' }}>
-                                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '32px' }}>
-                                        <h4 style={{ fontSize: '0.9rem', fontWeight: '950', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <Calculator size={16} color={rankColor} /> <span>算出ロジック・ブレイクダウン</span>
-                                        </h4>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '32px' }}>
-                                            <DetailItem label="Wu (Uniquenness)" value={tx.wu} desc="30日間の全社タスク頻度に基づく希少性スコア。稀なスキルほど高評価。" color={rankColor} />
-                                            <DetailItem label="Wd (Distribution)" value={tx.wd} desc="特定依頼者への依存度を抑制する分散係数。多くの依頼者と働くほど向上。" color="#22d3ee" />
-                                            <DetailItem label="Pc (Position)" value={tx.pc} color="#a855f7" desc="現在の役職に基づく基礎期待値。上位役職ほど高い基準が要求されます。" />
-                                            <DetailItem label="Q (Quality)" value={tx.q} color="#10b981" desc="依頼者による最終承認時評価。プロダクトの質に直結する単発因子。" />
-                                            <DetailItem label="Ac (Anti-collusion)" value={tx.ac} color="#fbbf24" desc="特定のペア間での不正操作を検知・抑制する安全係数。透明性の担保。" />
-                                            <DetailItem label="Aa (Activity)" value={tx.aa} color={rankColor} desc="30日間の活動負荷量に応じたアクティビティ指数。" />
-                                            <DetailItem label="Df (Difficulty)" value={tx.df} color="#ec4899" desc="タスクのアウトプット数、分岐、要求レベルから算出される技術的難易度。" />
-                                            <DetailItem label="Sf (Skill Mastery)" value={tx.sf} color="#6366f1" desc="過去の類似タスクにおける習熟度のEMA（指数移動平均）蓄積値。" />
-                                            <DetailItem label="Eb (Efficiency)" value={tx.eb || 1} color="#10b981" desc="予定時間に対する実働時間の効率性。迅速な完遂を評価。" />
-                                            <DetailItem label="Rr (Rank Ladder)" value={tx.rr} color="#fbbf24" desc="現在のランク区分による階層補正係数。実力の証明アセット。" />
+                                    <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '48px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '40px' }}>
+                                           <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${rankColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                              <Terminal size={20} color={rankColor} />
+                                           </div>
+                                           <div>
+                                              <h4 style={{ fontSize: '1.1rem', fontWeight: '950' }}>Audit Protocol: Algorithm-S v2.0 <span style={{ color: 'rgba(255,255,255,0.2)', marginLeft: '10px' }}>[HASH: {tx.id.substring(0,8)}]</span></h4>
+                                           </div>
                                         </div>
-                                        <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.6' }}>
-                                            <span style={{ color: rankColor, fontWeight: 'bold' }}>Formula-S:</span> 報酬(C) x Wu x Wd x Pc x Q x Ac x Aa x (Df + Sf) x Eb x Rr = <span style={{ color: 'white', fontWeight: 'bold' }}>{tx.finalScore.toFixed(2)} S-Points</span>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                            <DetailSection 
+                                                title="1. [Wu] Uniqueness Factor (独自性)" 
+                                                formula="1 + max(0, 5 - log2(n_30d)) / 10" 
+                                                variables={{ n_30d: tx.rawFrequency || '24 (AVG)' }}
+                                                value={tx.wu} 
+                                                color={rankColor} 
+                                            />
+                                            <DetailSection 
+                                                title="2. [Wd] Distribution Factor (分散性)" 
+                                                formula="1.0 - (max_share^2 * 0.2)" 
+                                                variables={{ max_share: tx.rawMaxShare || '0.15' }}
+                                                value={tx.wd} 
+                                                color="#22d3ee" 
+                                            />
+                                            <DetailSection 
+                                                title="3. [Pc] Expectation Multiplier (役職期待)" 
+                                                formula="1.0 + RoleBonus" 
+                                                variables={{ role_type: 'GENERAL' }}
+                                                value={tx.pc} 
+                                                color="#a855f7" 
+                                            />
+                                            <DetailSection 
+                                                title="4. [Q] Quality Index (品質指数)" 
+                                                formula="Evaluator Score (0.1 - 1.5)" 
+                                                variables={{ rating_input: tx.q }}
+                                                value={tx.q} 
+                                                color="#10b981" 
+                                            />
+                                            <DetailSection 
+                                                title="5. [Df] Task Difficulty (タスク難易度)" 
+                                                formula="1.0 + (n_o*0.1) + (n_b*0.1) + (s_req/10)" 
+                                                variables={{ n_o: tx.rawOutputs || 1, n_b: tx.rawBranches || 0, s_req: tx.rawRequiredSkill || 1.0 }}
+                                                value={tx.df} 
+                                                color="#ec4899" 
+                                            />
+                                            <DetailSection 
+                                                title="6. [Sf] Skill Mastery (スキル習熟)" 
+                                                formula="EMA_Skill_Level" 
+                                                variables={{ current_ema: tx.sf }}
+                                                value={tx.sf} 
+                                                color="#6366f1" 
+                                            />
+                                            <DetailSection 
+                                                title="7. [Eb] Execution Efficiency (実行効率)" 
+                                                formula="1.0 + max(0, (expected - actual) / expected)" 
+                                                variables={{ expected_h: tx.rawExpectedHours || 1.0, actual_h: tx.rawActualHours ? tx.rawActualHours.toFixed(2) : 'N/A' }}
+                                                value={tx.eb || 1} 
+                                                color="#10b981" 
+                                            />
+                                            <DetailSection 
+                                                title="8. [Rr] Rank Correction (ランク補正)" 
+                                                formula="1.0 + (rank_idx * 0.1)" 
+                                                variables={{ rank_ladder_pos: RANK_LADDER.indexOf(currentUser.rank) }}
+                                                value={tx.rr} 
+                                                color="#fbbf24" 
+                                            />
+                                        </div>
+
+                                        <div style={{ marginTop: '50px', padding: '40px', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: `1px solid ${rankColor}30` }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                                <h5 style={{ fontSize: '0.8rem', fontWeight: '950', color: rankColor, letterSpacing: '2px' }}>FINAL SETTLEMENT FORMULA</h5>
+                                                <div style={{ fontSize: '1.8rem', fontWeight: '950' }}>{tx.finalScore.toFixed(3)} <span style={{ fontSize: '0.8rem', color: rankColor }}>S-POINTS</span></div>
+                                            </div>
+                                            <div style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', lineHeight: '1.8', wordBreak: 'break-all' }}>
+                                                {tx.amount} (C) x {tx.wu} (Wu) x {tx.wd} (Wd) x {tx.pc} (Pc) x {tx.q} (Q) x {tx.ac} (Ac) x {tx.aa} (Aa) x ({tx.df} (Df) + {tx.sf} (Sf)) x {tx.eb || 1} (Eb) x {tx.rr} (Rr)
+                                            </div>
                                         </div>
                                     </div>
                                  </div>
@@ -272,6 +326,30 @@ export default function KPIPage() {
   );
 }
 
+function DetailSection({ title, formula, variables, value, color }: any) {
+    return (
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '24px' }}>
+            <div style={{ flex: 1 }}>
+                <h5 style={{ fontSize: '0.9rem', fontWeight: '950', color, marginBottom: '8px' }}>{title}</h5>
+                <div style={{ display: 'flex', gap: '15px', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                   <span>FORMULA: {formula}</span>
+                </div>
+            </div>
+            <div style={{ width: '400px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {Object.entries(variables).map(([k, v]: any) => (
+                        <div key={k} style={{ padding: '4px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', fontSize: '0.65rem' }}>
+                            <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: '5px' }}>{k}=</span>
+                            <span style={{ fontWeight: 'bold' }}>{v}</span>
+                        </div>
+                    ))}
+                </div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '950', color, width: '80px', textAlign: 'right' }}>x{value.toFixed(2)}</div>
+            </div>
+        </div>
+    );
+}
+
 function TabItem({ active, onClick, text, color }: any) {
     return (
         <button onClick={onClick} style={{ height: '50px', background: 'none', border: 'none', color: active ? 'white' : 'rgba(255,255,255,0.4)', fontSize: '1.1rem', fontWeight: '950', cursor: 'pointer', position: 'relative', transition: '0.3s' }}>
@@ -283,28 +361,16 @@ function TabItem({ active, onClick, text, color }: any) {
 
 function FactorInfo({ label, value, color, isCumulative = false }: any) {
   return (
-    <div style={{ padding: '15px', background: isCumulative ? `${color}10` : 'rgba(255,255,255,0.02)', borderRadius: '12px', border: isCumulative ? `1px solid ${color}40` : `1px solid ${color}15`, boxShadow: isCumulative ? `0 0 15px ${color}05` : 'none' }}>
-      <div style={{ fontSize: '0.65rem', color: isCumulative ? 'white' : 'rgba(255,255,255,0.4)', marginBottom: '5px', fontWeight: '900', opacity: isCumulative ? 1 : 0.6 }}>{label}</div>
+    <div style={{ padding: '15px', background: isCumulative ? `${color}10` : 'rgba(255,255,255,0.02)', borderRadius: '12px', border: isCumulative ? `1px solid ${color}40` : `1px solid ${color}15` }}>
+      <div style={{ fontSize: '0.65rem', color: isCumulative ? 'white' : 'rgba(255,255,255,0.4)', marginBottom: '5px', fontWeight: '900' }}>{label}</div>
       <div style={{ fontSize: '1.2rem', fontWeight: '950', color: color }}>x{value.toFixed(2)}</div>
     </div>
   );
 }
 
-function DetailItem({ label, value, color, desc }: any) {
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: '950', color }}>{label}</span>
-                <span style={{ fontSize: '1rem', fontWeight: '950', color }}>x{value.toFixed(2)}</span>
-            </div>
-            <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', lineHeight: '1.5' }}>{desc}</p>
-        </div>
-    );
-}
-
 function Badge({ label, color }: { label: string, color: string }) {
     return (
-        <span style={{ fontSize: '0.65rem', padding: '4px 10px', borderRadius: '6px', background: `${color}15`, color: color, fontWeight: 'bold', border: `1px solid ${color}30`, whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '0.65rem', padding: '4px 10px', borderRadius: '6px', background: `${color}15`, color: color, fontWeight: 'bold', border: `1px solid ${color}30` }}>
             {label}
         </span>
     );

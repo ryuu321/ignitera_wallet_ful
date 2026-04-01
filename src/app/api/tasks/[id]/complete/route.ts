@@ -132,7 +132,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           df: components.Df,
           sf: components.Sf,
           eb: components.Eb,
-          rr: components.Rr, // Integrated R_rank audit
+          rr: components.Rr,
+          // New Audit Telemetry
+          rawExpectedHours: tAny.expectedHours || 1.0,
+          rawActualHours: actualHours,
+          rawOutputs: tAny.outputs || 1,
+          rawBranches: tAny.branches || 0,
+          rawSkillCount: tAny.skillCount || 1,
+          rawRequiredSkill: tAny.requiredSkill || 1.0,
+          rawFrequency: currentTaskFreq,
+          rawMaxShare: maxReqShare,
           timestamp: now
         }
       }),

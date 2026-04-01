@@ -112,6 +112,16 @@ model Transaction {
   eb                Float     @default(1.0)
   rr                Float     @default(1.0)
   
+  // Raw Inputs for Audit
+  rawExpectedHours  Float?
+  rawActualHours    Float?
+  rawOutputs        Int?
+  rawBranches       Int?
+  rawSkillCount     Int?
+  rawRequiredSkill  Float?
+  rawFrequency      Int?
+  rawMaxShare       Float?
+  
   timestamp         DateTime  @default(now())
 }
 
