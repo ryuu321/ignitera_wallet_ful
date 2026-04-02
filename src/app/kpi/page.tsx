@@ -137,24 +137,24 @@ export default function KPIPage() {
                         }
                     }}
                     style={{ flex: 1, padding: '10px', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.4)', borderRadius: '10px', color: '#fbbf24', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                    STOCK換金
+                    IGN換金
                 </button>
                 <button 
                     onClick={async () => {
                         const amount = prompt('IGN を消費する額を入力してください:', '5');
                         if (amount && !isNaN(parseFloat(amount))) {
-                            const desc = prompt('使用用途を入力してください:', 'ツール課金/外注');
+                            const desc = prompt('使用用途を入力してください (例: ツール課金, 外注費):', '投資実行');
                             const res = await fetch('/api/expenses', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ userId: currentUser.id, amount: parseFloat(amount), category: 'INVESTMENT', description: desc })
                             });
-                            if (res.ok) { fetchKPIData(); alert('支出を記録しました。投資効率に影響します。'); }
+                            if (res.ok) { fetchKPIData(); alert('IGN の支払いが完了しました。'); }
                             else { const err = await res.json(); alert(`エラー: ${err.error}`); }
                         }
                     }}
                     style={{ flex: 1, padding: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '10px', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                    投資実行
+                    IGN支払
                 </button>
             </div>
 
@@ -272,10 +272,10 @@ export default function KPIPage() {
               ) : (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} key="company_top">
                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '32px' }}>
-                      <StatBlock title="Domain 1: 評価 (S)" value={data.totalScorePool.toFixed(1)} icon={<Award />} color={rankColor} labels="累積生成価値" />
-                      <StatBlock title="Domain 2: 市場 (Flow)" value={data.circulationVolume.toLocaleString()} icon={<Activity />} color="#6366f1" labels="7日間取引高" />
-                      <StatBlock title="Domain 3: 資産 (Stock)" value={data.totalStockPool.toLocaleString()} icon={<Database />} color="#10b981" labels="全社累積コイン" />
-                      <StatBlock title="Domain 4: 投資 (IGN)" value={data.investmentVolume.toLocaleString()} icon={<Rocket />} color="#fbbf24" labels="7日間経費投資" />
+                      <StatBlock title="Domain 1: 評価 (S) ⚡" value={data.totalScorePool.toFixed(1)} icon={<Award />} color={rankColor} labels="累積生成価値" />
+                      <StatBlock title="Domain 2: 市場 (Flow) ⚡" value={data.circulationVolume.toLocaleString()} icon={<Activity />} color="#6366f1" labels="7日間取引高" />
+                      <StatBlock title="Domain 3: 資産 (Stock) ⚡" value={data.totalStockPool.toLocaleString()} icon={<Database />} color="#10b981" labels="全社累積コイン" />
+                      <StatBlock title="Domain 4: 投資 (IGN) ⚡" value={data.investmentVolume.toLocaleString()} icon={<Rocket />} color="#fbbf24" labels="7日間経費投資" />
                    </div>
                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '32px', marginBottom: '32px' }}>
                       <div className="glass-card" style={{ padding: '32px', height: '420px', display: 'flex', flexDirection: 'column' }}>
