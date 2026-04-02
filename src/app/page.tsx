@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [activeMobileTab, setActiveMobileTab] = useState<'home' | 'market' | 'wallet'>('home');
 
@@ -26,13 +27,19 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const uRes = await fetch('/api/users');
-        const data = await uRes.json();
-        setUsers(data);
+        const [uRes, tRes] = await Promise.all([
+          fetch('/api/users'),
+          fetch('/api/tasks')
+        ]);
+        const uData = await uRes.json();
+        const tData = await tRes.json();
+        
+        setUsers(uData);
+        setTasks(tData);
         
         const savedId = localStorage.getItem('demo-user-id');
-        const user = savedId ? data.find((u: any) => u.id === savedId) : data[0];
-        setCurrentUser(user || data[0]);
+        const user = savedId ? uData.find((u: any) => u.id === savedId) : uData[0];
+        setCurrentUser(user || uData[0]);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };
@@ -147,10 +154,25 @@ export default function Dashboard() {
                 <span style={{ fontWeight: '950', fontSize: '1rem' }}>クイック・ミッション</span>
                 <Link href="/marketplace" style={{ color: rankColor, fontSize: '0.8rem', textDecoration: 'none' }}>すべて表示</Link>
              </div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <MissionTile title="ニューラル・ネットワークの最適化" reward="500" complexity="1.2" time="2h" color={rankColor} urgency="HIGH" />
-                <MissionTile title="マーケット・リバランス" reward="320" complexity="0.85" time="5h" color="#10b981" urgency="MID" />
-             </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                 {tasks.filter(t => t.status === 'OPEN' && t.requesterId !== currentUser.id).slice(0, 3).map(task => (
+                    <MissionTile 
+                       key={task.id} 
+                       title={task.title} 
+                       reward={task.baseReward} 
+                       complexity={task.requiredSkill || '1.0'} 
+                       time={`${task.expectedHours}h`} 
+                       color={getRankColor(task.requester?.rank || 'Z')} 
+                       urgency="OPEN" 
+                       onClick={() => location.href='/marketplace'}
+                    />
+                 ))}
+                 {tasks.filter(t => t.status === 'OPEN' && t.requesterId !== currentUser.id).length === 0 && (
+                    <div style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', textAlign: 'center', padding: '20px' }}>
+                       現在、募集中のミッションはありません。
+                    </div>
+                 )}
+              </div>
           </div>
 
           {/* Bottom Nav */}
@@ -337,8 +359,6 @@ export default function Dashboard() {
             </div>
             
             <div className={styles.missionList} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-               <MissionTile title="ニューラル・ネットワークの最適化" reward="500" complexity="1.2" time="残り 2h" color={rankColor} urgency="HIGH" />
-               <MissionTile title="マーケット・リバランス" reward="320" complexity="0.85" time="残り 5h" color="#10b981" urgency="MID" />
                <MissionTile title="成長基盤のオーディット" reward="850" complexity="1.45" time="残り 1d" color="#a855f7" urgency="LOW" />
                <MissionTile title="エージェント・プロトコル改善" reward="410" complexity="1.1" time="残り 3h" color="#ec4899" urgency="MID" />
             </div>
@@ -433,9 +453,10 @@ function StatCard({ title, value, trend, trendUp, icon, color, delay }: any) {
   );
 }
 
-function MissionTile({ title, reward, complexity, time, color, urgency }: any) {
+function MissionTile({ title, reward, complexity, time, color, urgency, onClick }: any) {
   return (
     <motion.div 
+      onClick={onClick}
       whileHover={{ scale: 1.01, background: 'rgba(255,255,255,0.03)' }}
       style={{ display: 'flex', alignItems: 'center', padding: '20px', background: 'rgba(255,255,255,0.01)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }}
     >
@@ -447,7 +468,7 @@ function MissionTile({ title, reward, complexity, time, color, urgency }: any) {
           <div style={{ display: 'flex', gap: '15px', marginTop: '4px' }}>
              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>負荷: x{complexity}</span>
              <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>期限: {time}</span>
-             <span style={{ fontSize: '0.7rem', color: urgency === 'HIGH' ? '#ef4444' : urgency === 'MID' ? '#f59e0b' : '#3b82f6', fontWeight: '900' }}>{urgency}</span>
+             <span style={{ fontSize: '0.7rem', color: urgency === 'OPEN' ? color : urgency === 'HIGH' ? '#ef4444' : urgency === 'MID' ? '#f59e0b' : '#3b82f6', fontWeight: '900' }}>{urgency}</span>
           </div>
        </div>
        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '20px' }}>

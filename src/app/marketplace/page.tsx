@@ -210,7 +210,8 @@ export default function Marketplace() {
   const filteredTasks = tasks.filter((t: any) => {
     if (view === 'my-issued') return t.requesterId === currentUser.id;
     if (view === 'my-bids') return t.bids?.some((b: any) => b.bidderId === currentUser.id);
-    return t.requesterId !== currentUser.id;
+    // 案件を探す (browse) モードでは、募集中のもののみを表示し、完了済みや自分自身の発行分を除外
+    return t.requesterId !== currentUser.id && t.status !== 'COMPLETED';
   });
 
   const rankColor = getRankColor(currentUser.rank);
