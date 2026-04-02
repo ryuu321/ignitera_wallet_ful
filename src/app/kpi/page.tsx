@@ -115,15 +115,53 @@ export default function KPIPage() {
           <div style={{ flex: 1 }} />
           <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '15px', letterSpacing: '1px', fontWeight: '900' }}>NEURAL_WALLET</div>
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-               <BalanceItem label="FLOW (Market)" value={currentUser.balanceFlow} unit="₲" color={rankColor} description="発行可能予算" />
-               <BalanceItem label="STOCK (Asset)" value={currentUser.balanceStock} unit="₲" color="#10b981" description="生涯蓄積資産" />
-               <BalanceItem label="IGN (Invest)" value={currentUser.balanceIgn} unit="𝒾" color="#fbbf24" description="経費/投資リソース" />
+                <BalanceItem label="FLOW (Market)" value={currentUser.balanceFlow} unit="₲" color={rankColor} description="今月の発行可能予算" />
+                <BalanceItem label="STOCK (Asset)" value={currentUser.balanceStock} unit="₲" color="#10b981" description="生涯蓄積・業務投資資産" />
+                <BalanceItem label="IGN (Invest)" value={currentUser.balanceIgn} unit="𝒾" color="#fbbf24" description="社内アメニティ・経費用" />
             </div>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                <button 
+                    onClick={async () => {
+                        const amount = prompt('IGN に換金する Stock の額を入力してください (1:1 換金):', '20');
+                        if (amount && !isNaN(parseFloat(amount))) {
+                            const res = await fetch('/api/exchange/stock-to-ign', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: currentUser.id, amount: parseFloat(amount) })
+                            });
+                            if (res.ok) { fetchKPIData(); alert('IGN への換金が完了しました。'); }
+                            else { const err = await res.json(); alert(`エラー: ${err.error}`); }
+                        }
+                    }}
+                    style={{ flex: 1, padding: '10px', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.4)', borderRadius: '10px', color: '#fbbf24', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                    STOCK換金
+                </button>
+                <button 
+                    onClick={async () => {
+                        const amount = prompt('IGN を消費する額を入力してください:', '5');
+                        if (amount && !isNaN(parseFloat(amount))) {
+                            const desc = prompt('使用用途を入力してください:', 'ツール課金/外注');
+                            const res = await fetch('/api/expenses', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: currentUser.id, amount: parseFloat(amount), category: 'INVESTMENT', description: desc })
+                            });
+                            if (res.ok) { fetchKPIData(); alert('支出を記録しました。投資効率に影響します。'); }
+                            else { const err = await res.json(); alert(`エラー: ${err.error}`); }
+                        }
+                    }}
+                    style={{ flex: 1, padding: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '10px', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                    投資実行
+                </button>
+            </div>
+
             <select 
               value={currentUser.id} 
               onChange={(e) => handleUserChange(e.target.value)} 
-              style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.8rem', marginBottom: '15px' }}
+              style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.8rem', marginTop: '15px' }}
             >
               {users.map(u => <option key={u.id} value={u.id} style={{ background: '#111' }}>{u.anonymousName} (Rank {u.rank})</option>)}
             </select>
@@ -162,7 +200,7 @@ export default function KPIPage() {
                                 <FactorInfo label="Sf" value={currentUser.skillLevel || 1} color="#6366f1" />
                                 <FactorInfo label="Eb" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+(b.eb||1),0)/personalTxs.length : 1} color="#10b981" />
                                 <FactorInfo label="Rr" value={personalTxs.length > 0 ? personalTxs.reduce((a:any,b:any)=>a+(b.rr||1),0)/personalTxs.length : 1} color="#fbbf24" />
-                                <FactorInfo label="f(Ec)" value={1.12} color={rankColor} />
+                                <FactorInfo label="f(Ec)" value={1.14} color={rankColor} />
                             </div>
                         </div>
                       </div>
@@ -178,12 +216,12 @@ export default function KPIPage() {
                    </div>
 
                    <div className="glass-card" style={{ padding: '32px' }}>
-                       <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: '950' }}>ミッション履歴・厳密監査アコーディオン (11 Factors)</h3>
-                       <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', marginBottom: '32px' }}>案件をタップして全11因子の数理導出を監査してください。</p>
+                       <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: '950' }}>ミッション履歴・嚴密監査アコーディオン (All Factors)</h3>
+                       <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.3)', marginBottom: '32px' }}>各案件をタップして全11因子の数理導出を統合監査してください。</p>
 
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           {personalTxs.map((tx: any) => (
-                            <div key={tx.id} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: '20px', overflow: 'hidden' }}>
+                            <div key={tx.id} style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: '24px', overflow: 'hidden' }}>
                                <div 
                                  onClick={() => { setExpandedTx(expandedTx === tx.id ? null : tx.id); setExpandedFactor(null); }}
                                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 32px', cursor: 'pointer', background: expandedTx === tx.id ? 'rgba(255,255,255,0.03)' : 'transparent' }}
@@ -192,17 +230,12 @@ export default function KPIPage() {
                                      <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)' }}>{new Date(tx.timestamp).toLocaleDateString()}</div>
                                      <div style={{ fontWeight: '950', fontSize: '1.4rem', color: rankColor, width: '120px' }}>{tx.finalScore.toFixed(1)} <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>S</span></div>
                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                        <Badge label={`C ${tx.amount}`} color="white" />
                                         <Badge label={`Wu ${tx.wu.toFixed(1)}`} color={rankColor} />
                                         <Badge label={`Wd ${tx.wd.toFixed(1)}`} color="#22d3ee" />
-                                        <Badge label={`Pc ${tx.pc.toFixed(1)}`} color="#a855f7" />
-                                        <Badge label={`Q ${tx.q.toFixed(1)}`} color="#10b981" />
-                                        <Badge label={`Ac ${tx.ac.toFixed(1)}`} color="#fbbf24" />
-                                        <Badge label={`Aa ${tx.aa.toFixed(1)}`} color={rankColor} />
-                                        <Badge label={`Df ${tx.df.toFixed(1)}`} color="#ec4899" />
                                         <Badge label={`Sf ${tx.sf.toFixed(1)}`} color="#6366f1" />
-                                        <Badge label={`Eb ${tx.eb.toFixed(1)}`} color="#10b981" />
                                         <Badge label={`Rr ${tx.rr.toFixed(1)}`} color="#fbbf24" />
-                                        <Badge label={`f(Ec) x1.12`} color={rankColor} />
+                                        <Badge label={`f(Ec) x1.14`} color={rankColor} />
                                      </div>
                                   </div>
                                   {expandedTx === tx.id ? <ChevronUp size={18} opacity={0.3} /> : <ChevronDown size={18} opacity={0.3} />}
@@ -211,17 +244,20 @@ export default function KPIPage() {
                                <AnimatePresence>
                                   {expandedTx === tx.id && (
                                     <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
-                                       <div style={{ padding: '0 32px 32px 32px' }}>
-                                          <div style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '24px', padding: '32px' }}>
-                                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                                                  <NestedFactor id="wu" title="Wu: 独自性" value={tx.wu} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + max(0, 5.0 - log2(n_30d)) / 10.0" variables={[{ name: 'n_30d', val: 5, source: 'System', reason: '直近30日の頻度' }]} />
-                                                  <NestedFactor id="wd" title="Wd: 分散性" value={tx.wd} color="#22d3ee" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 - (max_share^2 * 0.2)" variables={[{ name: 'max_share', val: 0.1, source: 'Audit', reason: '依頼者集中度' }]} />
-                                                  <NestedFactor id="ec" title="f(Ec): 効率補正" value={1.12} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1 + 0.1 * log(1 + Ec)" variables={[{ name: 'Ec', val: 2.4, source: 'Formula', reason: 'V / C_eval' }]} />
-                                                  <NestedFactor id="rr" title="Rr: ランク補正" value={tx.rr} color="#fbbf24" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1 + 0.003 * (13-r)" variables={[{ name: 'r', val: 4, source: 'Rank', reason: 'Dランク補正' }]} />
-                                                  {/* ... others ... */}
-                                              </div>
-                                              <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.8rem', color: 'rgba(255,255,255,0.2)' }}>
-                                                  ※ 詳細な全11因子の監査ログはブラウザのデバッグコンソールに出力されています。
+                                       <div style={{ padding: '0 32px 32px 144px' }}>
+                                          <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '32px', padding: '40px' }}>
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                  <NestedFactor id="wu" title="Wu: 独自性 (Domain-Aware)" value={tx.wu} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + max(0, 5.0 - log2(n_30d)) / 10.0" variables={[{ name: 'n_30d', val: 5, source: 'System', reason: '直近30日の頻度' }]} />
+                                                  <NestedFactor id="wd" title="Wd: 分散性 (Partner-Aware)" value={tx.wd} color="#22d3ee" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 - (max_share^2 * 0.2)" variables={[{ name: 'max_share', val: 0.1, source: 'Audit', reason: '特定依頼者への集中度' }]} />
+                                                  <NestedFactor id="pc" title="Pc: 役職期待値" value={tx.pc} color="#a855f7" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + RoleWeight" variables={[{ name: 'Role', val: 'GENERAL', source: '依頼者の設定', reason: 'ターゲット役職' }]} />
+                                                  <NestedFactor id="q" title="Q: 品質承認" value={tx.q} color="#10b981" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="Manual Input Rating" variables={[{ name: 'rating_score', val: tx.q, source: '依頼者の評価', reason: 'アウトプット品質' }]} />
+                                                  <NestedFactor id="ac" title="Ac: 癒着防止係数" value={tx.ac} color="#fbbf24" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 / (1.0 + pair_count * 0.05)" variables={[{ name: 'pair_count', val: 'Audit Check', source: 'Audit', reason: 'ペア間取引数' }]} />
+                                                  <NestedFactor id="aa" title="Aa: 活動ボリューム" value={tx.aa} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + log(1.0 + load)" variables={[{ name: 'user_load', val: 'Calc', source: 'Analytics', reason: '30日間負荷量' }]} />
+                                                  <NestedFactor id="df" title="Df: 定義難易度" value={tx.df} color="#ec4899" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + (n_o*0.1) + (n_b*0.1)" variables={[{ name: 'n_o', val: 1, source: 'Task Def', reason: '成果物の数' }]} />
+                                                  <NestedFactor id="sf" title="Sf: スキル資産" value={tx.sf} color="#6366f1" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="EMA Level Asset" variables={[{ name: 'ema_level', val: tx.sf, source: 'Career DNA', reason: '案件習熟度' }]} />
+                                                  <NestedFactor id="eb" title="Eb: 期待効率性" value={tx.eb || 1} color="#10b981" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1.0 + (exp - act) / exp" variables={[{ name: 'expected_h', val: tx.rawExpectedHours || 1.0, source: 'Request', reason: '推定時間' }]} />
+                                                  <NestedFactor id="rr" title="Rr: ランクアセット" value={tx.rr} color="#fbbf24" expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1 + 0.003 * (13-r)" variables={[{ name: 'rank_idx', val: 0, source: 'Career DNA', reason: '現在の公式ランク補正' }]} />
+                                                  <NestedFactor id="fec" title="f(Ec): 投資効率補正" value={1.14} color={rankColor} expanded={expandedFactor} setExpanded={setExpandedFactor} formula="1 + 0.1 * log(1 + Ec)" variables={[{ name: 'Ec', val: 2.4, source: 'Invest Audit', reason: 'IGN投資による価値総量効率' }]} />
                                               </div>
                                           </div>
                                        </div>
@@ -250,7 +286,7 @@ export default function KPIPage() {
                           <h3 style={{ fontSize: '1.2rem', marginBottom: '24px', fontWeight: '950' }}>全社平均評価因子 (11-Factor Matrix)</h3>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                               {Object.entries(data.avgFactors || {}).map(([k, v]: any) => <FactorInfo key={k} label={k.toUpperCase()} value={v} color={rankColor} />)}
-                              <FactorInfo label="F(EC)" value={1.12} color={rankColor} />
+                              <FactorInfo label="F(EC)" value={1.14} color={rankColor} />
                           </div>
                       </div>
                    </div>
@@ -327,21 +363,22 @@ function TabItem({ active, onClick, text, color }: any) {
 function NestedFactor({ id, title, value, color, formula, variables, expanded, setExpanded }: any) {
     const isThisExpanded = expanded === id;
     return (
-        <div style={{ border: '1px solid rgba(255,255,255,0.05)', borderRadius: '14px', overflow: 'hidden', background: isThisExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-            <div onClick={() => setExpanded(isThisExpanded ? null : id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', cursor: 'pointer' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color }} /><span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{title}</span></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><span style={{ fontSize: '1rem', fontWeight: '950', color }}>x{typeof value === 'number' ? value.toFixed(2) : '1.0'}</span>{isThisExpanded ? <ChevronUp size={12} opacity={0.3} /> : <ChevronDown size={12} opacity={0.3} />}</div>
+        <div style={{ border: '1px solid rgba(255,255,255,0.05)', borderRadius: '18px', overflow: 'hidden', background: isThisExpanded ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+            <div onClick={() => setExpanded(isThisExpanded ? null : id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}><div style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} /><span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{title}</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><span style={{ fontSize: '1.1rem', fontWeight: '950', color }}>x{typeof value === 'number' ? value.toFixed(2) : '1.0'}</span>{isThisExpanded ? <ChevronUp size={14} opacity={0.3} /> : <ChevronDown size={14} opacity={0.3} />}</div>
             </div>
             <AnimatePresence>{isThisExpanded && (
                 <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
-                    <div style={{ padding: '0 15px 15px 15px' }}><div style={{ padding: '15px', background: 'rgba(0,0,0,0.3)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', marginBottom: '15px', fontFamily: 'monospace' }}>LOGIC: {formula}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ padding: '0 24px 24px 44px' }}><div style={{ padding: '24px', background: 'rgba(0,0,0,0.3)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginBottom: '20px', fontFamily: 'monospace' }}>MATH_LOGIC: {formula}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             {variables.map((v: any) => (
-                                <div key={v.name} style={{ display: 'flex', gap: '15px' }}>
-                                    <div style={{ width: '80px' }}><div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)' }}>{v.name}</div><div style={{ fontSize: '0.9rem', fontWeight: '950' }}>{v.val}</div></div>
+                                <div key={v.name} style={{ display: 'flex', gap: '24px' }}>
+                                    <div style={{ width: '130px' }}><div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px' }}>{v.name}</div><div style={{ fontSize: '1.1rem', fontWeight: '950' }}>{v.val}</div></div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', fontWeight: 'bold' }}>[{v.source}]</span> <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>{v.reason}</span></div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}><span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: '5px', background: v.source.includes('依頼者') ? `${color}40` : 'rgba(255,255,255,0.05)', color: v.source.includes('依頼者') ? 'white' : 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>{v.source}</span></div>
+                                        <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', lineHeight: '1.6' }}>{v.reason}</p>
                                     </div>
                                 </div>
                             ))}
@@ -355,15 +392,15 @@ function NestedFactor({ id, title, value, color, formula, variables, expanded, s
 
 function FactorInfo({ label, value, color, isCumulative = false }: any) {
   return (
-    <div style={{ padding: '12px', background: isCumulative ? `${color}10` : 'rgba(255,255,255,0.02)', borderRadius: '10px', border: isCumulative ? `1px solid ${color}30` : `1px solid ${color}10`, textAlign: 'center' }}>
-      <div style={{ fontSize: '0.6rem', color: isCumulative ? 'white' : 'rgba(255,255,255,0.4)', marginBottom: '4px', fontWeight: '900' }}>{label}</div>
-      <div style={{ fontSize: '1.1rem', fontWeight: '950', color: color }}>x{typeof value === 'number' ? value.toFixed(2) : '1.0'}</div>
+    <div style={{ padding: '15px', background: isCumulative ? `${color}10` : 'rgba(255,255,255,0.02)', borderRadius: '12px', border: isCumulative ? `1px solid ${color}40` : `1px solid ${color}15` }}>
+      <div style={{ fontSize: '0.65rem', color: isCumulative ? 'white' : 'rgba(255,255,255,0.4)', marginBottom: '5px', fontWeight: '900' }}>{label}</div>
+      <div style={{ fontSize: '1.2rem', fontWeight: '950', color: color }}>x{typeof value === 'number' ? value.toFixed(2) : '1.0'}</div>
     </div>
   );
 }
 
 function Badge({ label, color }: { label: string, color: string }) {
     return (
-        <span style={{ fontSize: '0.7rem', padding: '3px 10px', borderRadius: '5px', background: `${color}15`, color: color, fontWeight: 'bold', border: `1px solid ${color}25` }}>{label}</span>
+        <span style={{ fontSize: '0.75rem', padding: '4px 12px', borderRadius: '6px', background: `${color}15`, color: color, fontWeight: 'bold', border: `1px solid ${color}30` }}>{label}</span>
     );
 }
