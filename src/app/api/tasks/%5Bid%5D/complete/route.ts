@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calculateAlgorithmS } from '@/lib/engine';
+import { getRankCorrection } from '@/lib/rank';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -96,6 +97,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           wu: sInput.wu, wd: sInput.wd, pc: sInput.pc, q: sInput.q,
           ac: sInput.ac, aa: sInput.aa, df: sInput.df, sf: sInput.sf,
           eb: sInput.eb,
+          rr: getRankCorrection(task.assignee.rank),
+          rawExpectedHours: task.expectedHours,
+          rawActualHours: sInput.hours,
         }
       })
     ]);
