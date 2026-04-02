@@ -21,7 +21,7 @@ export async function GET() {
     // Domain 4: IGN (Investment)
     const totalIgnPool = users.reduce((acc, u) => acc + (u.balanceIgn || 0), 0);
     const weeklyExpenses = await prisma.expense.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
+      where: { timestamp: { gte: sevenDaysAgo } },
     });
     const investmentVolume = weeklyExpenses.reduce((acc: number, e: any) => acc + e.amount, 0);
 

@@ -45,6 +45,12 @@ export function calculateAlgorithmS(input: SInput): number {
   return parseFloat(S.toFixed(4));
 }
 
+export function getRankCorrection(rank: string): number {
+  const rankMap: Record<string, number> = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'Z': 13 };
+  const r = rankMap[rank.toUpperCase()] || 13;
+  return 1 + 0.003 * (13 - r);
+}
+
 export function getRankThreshold(n: number): number {
   return 100 * Math.pow(1.2, n);
 }

@@ -1,5 +1,7 @@
 import { prisma } from './prisma';
-import { getRankThreshold, determineRankChange } from './engine';
+import { getRankThreshold, determineRankChange, getRankCorrection } from './engine';
+
+export { getRankCorrection };
 
 export const RANK_LADDER = ['D', 'C', 'B', 'A'];
 
