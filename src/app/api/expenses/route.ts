@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       data: {
         userId,
         amount: useAmount,
-        category: category || 'GENERAL',
+        type: category || 'GENERAL',
         description: description || 'Investment Activity',
         timestamp: new Date()
       }

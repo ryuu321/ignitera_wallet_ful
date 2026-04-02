@@ -1,53 +1,55 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id: taskId } = await params;
     const { bidderId, amount, message } = await req.json();
+    const { id: taskId } = await params;
 
-    // Check if task exists and is open for bidding
-    const task = await prisma.task.findUnique({ where: { id: taskId } });
-    if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
-    if (task.status !== 'OPEN' && task.status !== 'BIDDING') {
-      return NextResponse.json({ error: 'Task is not open for bidding' }, { status: 400 });
+    // 1. Check Task Existence
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    // Create bid
+    if (task.status !== 'OPEN') {
+      return NextResponse.json({ error: 'Task is no longer accepting bids' }, { status: 400 });
+    }
+
+    // 2. Check Bidder Existence
+    const bidder = await prisma.user.findUnique({
+      where: { id: bidderId },
+    });
+
+    if (!bidder) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // 3. Prevent self-bidding
+    if (task.requesterId === bidderId) {
+      return NextResponse.json({ error: 'Cannot bid on your own task' }, { status: 400 });
+    }
+
+    // 4. Create Bid
     const bid = await prisma.bid.create({
       data: {
         taskId,
         bidderId,
         amount: parseFloat(amount),
-        message,
+        message: message || '',
+        status: 'PENDING',
       },
-      include: { bidder: true }
     });
 
-    // Update task status to BIDDING if it was OPEN
-    if (task.status === 'OPEN') {
-      await prisma.task.update({
-        where: { id: taskId },
-        data: { status: 'BIDDING' }
-      });
-    }
-
-    return NextResponse.json(bid);
+    return NextResponse.json({ success: true, bid });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-}
-
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id: taskId } = await params;
-    const bids = await prisma.bid.findMany({
-      where: { taskId: taskId },
-      include: { bidder: true },
-      orderBy: { createdAt: 'desc' }
-    });
-    return NextResponse.json(bids);
-  } catch (error: any) {
+    console.error('[BID ERROR]', error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

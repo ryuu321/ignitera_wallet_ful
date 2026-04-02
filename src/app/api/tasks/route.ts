@@ -19,8 +19,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { title, description, reward, requesterId, tags } = await req.json();
-    const rewardVal = parseFloat(reward);
+    const { title, description, baseReward, requesterId, tags, expectedHours, position } = await req.json();
+    const rewardVal = parseFloat(baseReward);
 
     // 1. Validation: Requester must have enough TOTAL resources (Flow + Stock)
     const requester = await prisma.user.findUnique({
@@ -28,9 +28,9 @@ export async function POST(req: Request) {
       select: { balanceFlow: true, balanceStock: true }
     });
 
-    if (!requester || (requester.balanceFlow + requester.balanceStock) < rewardVal) {
+    if (!requester || ((requester.balanceFlow || 0) + (requester.balanceStock || 0)) < rewardVal) {
       return NextResponse.json({ 
-        error: `Insufficient budget. Total required: ${rewardVal}, Available: ${requester?.balanceFlow + requester?.balanceStock}` 
+        error: `Insufficient budget. Total required: ${rewardVal}, Available: ${(requester?.balanceFlow || 0) + (requester?.balanceStock || 0)}` 
       }, { status: 400 });
     }
 
@@ -40,6 +40,8 @@ export async function POST(req: Request) {
         title,
         description,
         baseReward: rewardVal, 
+        expectedHours: parseFloat(expectedHours) || 1.0,
+        position: position || 'GENERAL',
         requesterId,
         tags: Array.isArray(tags) ? JSON.stringify(tags) : '[]',
         status: 'OPEN',
