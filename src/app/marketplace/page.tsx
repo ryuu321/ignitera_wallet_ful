@@ -129,8 +129,15 @@ export default function Marketplace() {
         setShowBidModal(null);
         setNewBid({ amount: '', message: '' });
         fetchData();
+        alert('入札が完了しました。');
+      } else {
+        const err = await res.json();
+        alert(`入札エラー: ${err.error || '不明なエラー'}`);
       }
-    } catch (err) { console.error(err); }
+    } catch (err: any) { 
+      console.error(err); 
+      alert(`システムエラー: ${err.message}`);
+    }
   };
 
   const handleAcceptBid = async (taskId: string, bidId: string) => {
