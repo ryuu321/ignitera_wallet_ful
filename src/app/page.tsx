@@ -15,8 +15,15 @@ export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [activeMobileTab, setActiveMobileTab] = useState<'home' | 'market' | 'wallet'>('home');
 
   useEffect(() => {
+    // Detect mobile initial state
+    const isMobile = window.innerWidth < 1024;
+    const savedMode = localStorage.getItem('display-mode') as 'desktop' | 'mobile';
+    setViewMode(savedMode || (isMobile ? 'mobile' : 'desktop'));
+
     const fetchData = async () => {
       try {
         const uRes = await fetch('/api/users');
@@ -30,7 +37,21 @@ export default function Dashboard() {
       finally { setLoading(false); }
     };
     fetchData();
+
+    const handleResize = () => {
+       if (!localStorage.getItem('display-mode')) {
+          setViewMode(window.innerWidth < 1024 ? 'mobile' : 'desktop');
+       }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const toggleViewMode = () => {
+    const next = viewMode === 'desktop' ? 'mobile' : 'desktop';
+    setViewMode(next);
+    localStorage.setItem('display-mode', next);
+  };
 
   const handleUserChange = (id: string) => {
     const user = users.find(u => u.id === id);
@@ -46,6 +67,116 @@ export default function Dashboard() {
 
   const rankColor = getRankColor(currentUser.rank);
 
+  // Mobile Lite Layout
+  if (viewMode === 'mobile') {
+    return (
+      <div style={{ background: '#05050e', minHeight: '100vh', color: 'white', padding: '20px 20px 100px 20px', fontFamily: 'inherit' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: rankColor, padding: '8px', borderRadius: '10px' }}><Zap size={18} color="white" /></div>
+                <span style={{ fontWeight: '900', fontSize: '1.2rem', letterSpacing: '-1px' }}>Ignitera <span style={{ color: rankColor }}>OS</span></span>
+             </div>
+             <button onClick={toggleViewMode} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '900' }}>
+                GO_DESKTOP
+             </button>
+          </header>
+
+          <div style={{ marginBottom: '30px' }}>
+             <h2 style={{ fontSize: '1.8rem', fontWeight: '950', letterSpacing: '-1.5px', marginBottom: '4px' }}>Hi, {currentUser.anonymousName}</h2>
+             <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)' }}>R-{currentUser.rank} / Neural Node {currentUser.id.slice(0,4)}</div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+             <div className="glass-card" style={{ padding: '24px', background: `linear-gradient(135deg, ${rankColor}20, transparent)`, border: `1px solid ${rankColor}30`, borderRadius: '24px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', letterSpacing: '1px', fontWeight: '900' }}>TOTAL_S_SCORE</div>
+                <div style={{ fontSize: '2.8rem', fontWeight: '950', color: rankColor }}>{currentUser.totalScore?.toFixed(1)}</div>
+                <div style={{ marginTop: '15px', display: 'flex', gap: '8px' }}>
+                   <div style={{ background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: '10px', fontSize: '0.7rem' }}>Rank: {currentUser.rank}</div>
+                   <div style={{ background: 'rgba(255,255,255,0.03)', padding: '6px 12px', borderRadius: '10px', fontSize: '0.7rem' }}>Next: {getPromotionThreshold(RANK_LADDER[RANK_LADDER.indexOf(currentUser.rank)+1] || 'S')}</div>
+                </div>
+             </div>
+
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '24px' }}>
+                   <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '4px' }}>FLOW</div>
+                   <div style={{ fontSize: '1.4rem', fontWeight: '900' }}>₲{currentUser.balanceFlow}</div>
+                </div>
+                <div className="glass-card" style={{ padding: '20px', borderRadius: '24px' }}>
+                   <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '4px' }}>STOCK</div>
+                   <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#10b981' }}>₲{currentUser.balanceStock?.toFixed(0)}</div>
+                </div>
+             </div>
+
+             <div className="glass-card" style={{ padding: '24px', borderRadius: '24px', border: '1px solid rgba(251, 191, 36, 0.3)', background: 'rgba(251, 191, 36, 0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: '900', letterSpacing: '1px' }}>IGN_WALLET</div>
+                    <Link href="/expenses" style={{ textDecoration: 'none', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>履歴を表示</Link>
+                </div>
+                <div style={{ fontSize: '2.2rem', fontWeight: '950', color: '#fbbf24', marginBottom: '20px' }}>𝒾 {currentUser.balanceIgn?.toLocaleString() || '0'}</div>
+                
+                <div style={{ display: 'flex', gap: '10px' }}>
+                   <button 
+                     onClick={async () => {
+                        const amount = prompt('IGN に換金する Stock 額:', '10');
+                        if (amount) {
+                           const res = await fetch('/api/exchange/stock-to-ign', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: currentUser.id, amount }) });
+                           if (res.ok) window.location.reload();
+                        }
+                     }}
+                     style={{ flex: 1, padding: '14px', background: '#fbbf24', color: 'black', border: 'none', borderRadius: '14px', fontSize: '0.8rem', fontWeight: '900' }}>
+                     換金する
+                   </button>
+                   <button 
+                     onClick={async () => {
+                        const amount = prompt('使用する額:', '5');
+                        if (amount) {
+                           const desc = prompt('用途:', 'アメニティ利用');
+                           const res = await fetch('/api/expenses', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ userId: currentUser.id, amount, category: 'GENERAL', description: desc }) });
+                           if (res.ok) window.location.reload();
+                        }
+                     }}
+                     style={{ flex: 1, padding: '14px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', fontSize: '0.8rem', fontWeight: '900' }}>
+                     支払う
+                   </button>
+                </div>
+             </div>
+          </div>
+
+          <div style={{ marginTop: '40px' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                <span style={{ fontWeight: '950', fontSize: '1rem' }}>クイック・ミッション</span>
+                <Link href="/marketplace" style={{ color: rankColor, fontSize: '0.8rem', textDecoration: 'none' }}>すべて表示</Link>
+             </div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <MissionTile title="ニューラル・ネットワークの最適化" reward="500" complexity="1.2" time="2h" color={rankColor} urgency="HIGH" />
+                <MissionTile title="マーケット・リバランス" reward="320" complexity="0.85" time="5h" color="#10b981" urgency="MID" />
+             </div>
+          </div>
+
+          {/* Bottom Nav */}
+          <nav style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', height: '70px', background: 'rgba(20,20,25,0.85)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '25px', display: 'flex', padding: '0 10px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', zIndex: 1000 }}>
+             <button onClick={() => location.href='/'} style={{ flex: 1, background: 'none', border: 'none', color: '#6366f1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <LayoutDashboard size={20} />
+                <span style={{ fontSize: '0.6rem', fontWeight: 'bold' }}>HOME</span>
+             </button>
+             <button onClick={() => location.href='/marketplace'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <Briefcase size={20} />
+                <span style={{ fontSize: '0.6rem', fontWeight: 'bold' }}>MARKET</span>
+             </button>
+             <button onClick={() => alert('支払いQR読取(未実装)')} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <Zap size={20} />
+                <span style={{ fontSize: '0.6rem', fontWeight: 'bold' }}>PAY</span>
+             </button>
+             <button onClick={() => location.href='/profile'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <User size={20} />
+                <span style={{ fontSize: '0.6rem', fontWeight: 'bold' }}>DNA</span>
+             </button>
+          </nav>
+      </div>
+    );
+  }
+
+  // Desktop Layout (Existing)
   return (
     <div 
       className={styles.dashboardContainer} 
@@ -150,6 +281,9 @@ export default function Dashboard() {
                     階級: {currentUser.rank} セクター
                   </div>
                   <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)' }}>すべてのプロトコルは正常に同期されています。</div>
+                  <button onClick={toggleViewMode} style={{ marginLeft: '20px', background: 'none', border: `1px solid ${rankColor}40`, color: rankColor, padding: '4px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '900', cursor: 'pointer' }}>
+                     SWITCH_TO_MOBILE
+                  </button>
                </div>
             </motion.div>
           </div>

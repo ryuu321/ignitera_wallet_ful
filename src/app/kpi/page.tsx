@@ -35,6 +35,8 @@ export default function KPIPage() {
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [expandedFactor, setExpandedFactor] = useState<string | null>(null);
 
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+
   const fetchKPIData = async () => {
     try {
       const [kRes, uRes] = await Promise.all([
@@ -53,8 +55,17 @@ export default function KPIPage() {
   };
 
   useEffect(() => {
+    const isMobile = window.innerWidth < 1024;
+    const savedMode = localStorage.getItem('display-mode') as 'desktop' | 'mobile';
+    setViewMode(savedMode || (isMobile ? 'mobile' : 'desktop'));
     fetchKPIData();
   }, []);
+
+  const toggleViewMode = () => {
+    const next = viewMode === 'desktop' ? 'mobile' : 'desktop';
+    setViewMode(next);
+    localStorage.setItem('display-mode', next);
+  };
 
   const handleUserChange = (id: string) => {
     const user = users.find(u => u.id === id);
@@ -67,6 +78,46 @@ export default function KPIPage() {
   if (loading || !data || !currentUser) return <div style={{ height: '100vh', background: '#050511', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>組織知能を同期中...</div>;
 
   const rankColor = getRankColor(currentUser.rank);
+
+  // Mobile Lite Layout
+  if (viewMode === 'mobile') {
+    return (
+      <div style={{ background: '#05050e', minHeight: '100vh', color: 'white', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          <div style={{ background: `${rankColor}15`, padding: '30px', borderRadius: '30px', border: `1px solid ${rankColor}30`, marginBottom: '30px' }}>
+             <Microscope size={60} color={rankColor} />
+          </div>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '950', marginBottom: '15px' }}>ANALYTICS_LOCKED</h2>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', maxWidth: '300px', lineHeight: '1.6', marginBottom: '40px' }}>
+             詳細なパフォーマンス監査と数理因子分析はデスクトップ版でのみ利用可能です。PCからアクセスしてください。
+          </p>
+          <button onClick={toggleViewMode} style={{ background: 'none', border: `1px solid ${rankColor}40`, color: rankColor, padding: '12px 24px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '900' }}>
+             FORCE_DESKTOP_UI
+          </button>
+
+          {/* Bottom Nav */}
+          <nav style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', height: '75px', background: 'rgba(20,20,25,0.9)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '30px', display: 'flex', padding: '0 15px', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', zIndex: 1000 }}>
+             <button onClick={() => location.href='/'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <LayoutDashboard size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>HOME</span>
+             </button>
+             <button onClick={() => location.href='/marketplace'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <Briefcase size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>MARKET</span>
+             </button>
+             <button onClick={() => alert('支払いQR読取(未実装)')} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <Zap size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>PAY</span>
+             </button>
+             <button onClick={() => location.href='/profile'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <User size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>DNA</span>
+             </button>
+          </nav>
+      </div>
+    );
+  }
+
+  // Desktop Layout
   const personalTxs = (data.transactions || []).filter((tx: any) => tx.toUserId === currentUser.id);
 
   const chartOptions = {

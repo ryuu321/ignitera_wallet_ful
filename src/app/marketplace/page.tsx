@@ -16,6 +16,7 @@ export default function Marketplace() {
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   
   const [showModal, setShowModal] = useState(false);
   const [showBidModal, setShowBidModal] = useState<any>(null);
@@ -57,7 +58,18 @@ export default function Marketplace() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    const isMobile = window.innerWidth < 1024;
+    const savedMode = localStorage.getItem('display-mode') as 'desktop' | 'mobile';
+    setViewMode(savedMode || (isMobile ? 'mobile' : 'desktop'));
+    fetchData(); 
+  }, []);
+
+  const toggleViewMode = () => {
+    const next = viewMode === 'desktop' ? 'mobile' : 'desktop';
+    setViewMode(next);
+    localStorage.setItem('display-mode', next);
+  };
 
   const handleUserChange = (id: string) => {
     const user = users.find(u => u.id === id);
@@ -203,6 +215,102 @@ export default function Marketplace() {
 
   const rankColor = getRankColor(currentUser.rank);
 
+  // Mobile Lite Layout
+  if (viewMode === 'mobile') {
+    return (
+      <div style={{ background: '#05050e', minHeight: '100vh', color: 'white', padding: '20px 20px 100px 20px' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: rankColor, padding: '8px', borderRadius: '10px' }}><Zap size={18} color="white" /></div>
+                <h1 style={{ fontSize: '1.2rem', fontWeight: '950', letterSpacing: '-1.5px' }}>MARKETPLACE</h1>
+             </div>
+             <button onClick={toggleViewMode} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '900' }}>
+                GO_DESKTOP
+             </button>
+          </header>
+
+          <nav style={{ display: 'flex', gap: '12px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '5px' }}>
+             <button onClick={() => setView('browse')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'browse' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'browse' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>探す</button>
+             <button onClick={() => setView('my-issued')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-issued' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-issued' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>発行済</button>
+             <button onClick={() => setView('my-bids')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-bids' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-bids' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>入札中</button>
+          </nav>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+             {filteredTasks.length === 0 && <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.2)', fontSize: '0.9rem' }}>対象案件が見つかりません。</div>}
+             {filteredTasks.map((task) => (
+                <motion.div 
+                    key={task.id} 
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => { if(task.requesterId !== currentUser.id) setShowBidModal(task) }}
+                    className="glass-card" 
+                    style={{ padding: '24px', borderLeft: `6px solid ${task.status === 'OPEN' ? rankColor : '#6366f1'}`, borderRadius: '24px', position: 'relative' }}
+                >
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: '900', letterSpacing: '1px' }}>{task.position}</span>
+                      <div style={{ textAlign: 'right' }}>
+                         <span style={{ fontWeight: '950', color: rankColor, fontSize: '1.4rem' }}>₲{task.baseReward}</span>
+                      </div>
+                   </div>
+                   <h3 style={{ fontSize: '1.2rem', fontWeight: '900', marginBottom: '8px', letterSpacing: '-0.5px' }}>{task.title}</h3>
+                   <div style={{ display: 'flex', gap: '15px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {task.expectedHours}h</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Zap size={12} /> {task.bids?.length || 0} Bids</div>
+                   </div>
+                   
+                   {task.status === 'IN_PROGRESS' && task.requesterId === currentUser.id && (
+                       <button 
+                         onClick={(e) => { e.stopPropagation(); setShowReviewModal(task); }}
+                         style={{ width: '100%', marginTop: '20px', padding: '16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '950', fontSize: '0.9rem', boxShadow: '0 10px 20px rgba(16, 185, 129, 0.3)' }}>
+                         ミッション完了を承認
+                       </button>
+                   )}
+                </motion.div>
+             ))}
+          </div>
+
+          <button 
+            onClick={() => setShowModal(true)}
+            style={{ position: 'fixed', bottom: '110px', right: '30px', width: '70px', height: '70px', borderRadius: '35px', background: rankColor, border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 15px 40px ${rankColor}60`, zIndex: 100 }}>
+             <Plus size={36} strokeWidth={3} />
+          </button>
+
+          {/* Bottom Nav */}
+          <nav style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', height: '75px', background: 'rgba(20,20,25,0.9)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '30px', display: 'flex', padding: '0 15px', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', zIndex: 1000 }}>
+             <button onClick={() => location.href='/'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <LayoutDashboard size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>HOME</span>
+             </button>
+             <button onClick={() => location.href='/marketplace'} style={{ flex: 1, background: 'none', border: 'none', color: rankColor, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <Briefcase size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>MARKET</span>
+             </button>
+             <button onClick={() => alert('支払いQR読取(未実装)')} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <Zap size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>PAY</span>
+             </button>
+             <button onClick={() => location.href='/profile'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <User size={22} />
+                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>DNA</span>
+             </button>
+          </nav>
+
+          <AnimatePresence>
+            {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} masterSkills={masterSkills} color={rankColor} refreshSkills={fetchData} /></div>}
+            {showBidModal && <div className="modal-overlay" onClick={() => setShowBidModal(null)}><div onClick={e => e.stopPropagation()}><BidModal task={showBidModal} onClose={() => setShowBidModal(null)} onSubmit={handlePlaceBid} newBid={newBid} setNewBid={setNewBid} color={rankColor} /></div></div>}
+            {showReviewModal && <div className="modal-overlay"><ReviewModal task={showReviewModal} onClose={() => setShowReviewModal(null)} onSubmit={handleCompleteTask} qualityScore={qualityScore} setQualityScore={setQualityScore} actualHours={actualHours} setActualHours={setActualHours} color={rankColor} /></div>}
+            {showMessageModal && <div className="modal-overlay"><MessageModal task={showMessageModal} messages={taskMessages} currentUser={currentUser} onClose={() => setShowMessageModal(null)} onSend={handleSendMessage} newMessage={newMessage} setNewMessage={setNewMessage} color={rankColor} /></div>}
+          </AnimatePresence>
+          <style jsx>{`
+            .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); backdrop-filter: blur(25px); z-index: 2000; display: flex; align-items: flex-end; justify-content: center; }
+            @media (max-width: 1024px) {
+               :global(.glass-card) { width: 95% !important; margin-bottom: 20px; }
+            }
+          `}</style>
+      </div>
+    );
+  }
+
+  // Desktop Layout
   return (
     <div className={styles.dashboardContainer} style={{ background: '#050511', color: 'white', minHeight: '100vh', '--primary': rankColor } as any}>
       <aside className={styles.sidebar}>
@@ -294,9 +402,14 @@ export default function Marketplace() {
         <header className={styles.topHeader} style={{ marginBottom: '48px' }}>
           <div>
             <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-2px' }}>ミッション・<span style={{ color: rankColor }}>{view === 'browse' ? '探索' : view === 'my-issued' ? '管理' : 'ステータス'}</span></h1>
-            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '1rem', marginTop: '4px' }}>
-              {view === 'browse' ? '分散型プロトコルから最適なミッションをスキャンし入札してください。' : '自らが発行したミッションの進捗と報酬支払いを管理します。'}
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+               <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '1rem', marginTop: '4px' }}>
+                 {view === 'browse' ? '分散型プロトコルから最適なミッションをスキャンし入札してください。' : '自らが発行したミッションの進捗と報酬支払いを管理します。'}
+               </p>
+               <button onClick={toggleViewMode} style={{ background: 'none', border: `1px solid ${rankColor}40`, color: rankColor, padding: '4px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '900', cursor: 'pointer' }}>
+                  SWITCH_TO_MOBILE
+               </button>
+            </div>
           </div>
           <button className="neon-button" style={{ background: rankColor }} onClick={() => setShowModal(true)}>
             <Plus size={18} /> <span>ミッションを新規発行</span>
