@@ -19,11 +19,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       include: { assignee: true, requester: true }
     });
 
-    if (!task || !task.assigneeId || !task.assignee) {
-      return NextResponse.json({ error: 'Task or assignee not found' }, { status: 404 });
+    if (!task || !task.assigneeId || !task.assignee || !task.requester) {
+      return NextResponse.json({ error: 'Task / Roles not found' }, { status: 404 });
     }
 
-    // 1. Prepare Input for Algorithm S
+    // 1. Calculate Reward Subtraction (Requester side)
+    // - totalPayment = task.baseReward
+    // - subtract from balanceFlow first
+    // - remainder from balanceStock
+    const totalPayment = task.baseReward;
+    const availableFlow = task.requester.balanceFlow;
+    const availableStock = task.requester.balanceStock;
+
+    if (availableFlow + availableStock < totalPayment) {
+       return NextResponse.json({ error: 'Requester has insufficient total balance at completion stage' }, { status: 400 });
+    }
+
+    const flowPayment = Math.min(availableFlow, totalPayment);
+    const stockPayment = totalPayment - flowPayment;
+
+    // 2. Prepare Input for Algorithm S
     const sInput = {
       wu: wu ?? 1.0,
       wd: wd ?? 1.0,
@@ -40,15 +55,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       rank: task.assignee.rank,
     };
 
-    // 2. Calculate Final Score (S)
+    // 3. Calculate Final Score (S)
     const finalScore = calculateAlgorithmS(sInput);
 
-    // 3. Update Database (Atomic Transaction)
+    // 4. Update Database (Atomic Transaction)
     // - S (Evaluation): Update Score
-    // - Market (C_flow): Decrease requester's balanceFlow
-    // - Assets (C_stock): Increase assignee's balanceStock
+    // - Market (C_flow / C_stock): Payment from requester
+    // - Assets (C_stock): Increment receiver assets
     const [updatedUser, completedTask] = await prisma.$transaction([
-      // Assignee Data (Score and Assets)
+      // 4a. Assignee Data (Score and Assets)
       prisma.user.update({
         where: { id: task.assigneeId },
         data: {
@@ -57,19 +72,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           totalScore: { increment: finalScore },
         }
       }),
-      // Requester Data (Flow Economy)
+      // 4b. Requester Data (Multiple domain subtraction)
       prisma.user.update({
         where: { id: task.requesterId },
         data: {
-          balanceFlow: { decrement: task.baseReward },
+          balanceFlow: { decrement: flowPayment },
+          balanceStock: { decrement: stockPayment },
         }
       }),
-      // Task Status Update
+      // 4c. Task Status Update
       prisma.task.update({
         where: { id: taskId },
         data: { status: 'COMPLETED' }
       }),
-      // Log the Transaction
+      // 4d. Log the Transaction
       prisma.transaction.create({
         data: {
           taskId,
@@ -87,7 +103,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ 
       success: true, 
       finalScore, 
-      reward: task.baseReward 
+      reward: task.baseReward,
+      flowUsed: flowPayment,
+      stockUsed: stockPayment
     });
 
   } catch (error: any) {
