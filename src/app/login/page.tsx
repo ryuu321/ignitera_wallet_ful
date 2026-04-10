@@ -23,12 +23,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Invalid identifier. Please use a valid anonymous name.");
+        setError("認証に失敗しました。正しいエージェント名を入力してください。");
       } else {
         router.push("/dashboard");
       }
     } catch (err) {
-      setError("An unexpected error occurred.");
+      setError("予期せぬエラーが発生しました。");
     } finally {
       setIsPending(false);
     }
@@ -43,7 +43,7 @@ export default function LoginPage() {
         
         <div className="text-center mb-10 mt-4">
           <h1 className="text-3xl font-bold text-white tracking-tight">Ignitera OS</h1>
-          <p className="text-gray-400 mt-2 text-sm italic">Neural Career Authorization Required</p>
+          <p className="text-gray-400 mt-2 text-sm italic">神経キャリア認証が必要です</p>
         </div>
 
         {error && (
@@ -55,12 +55,12 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 px-1">
-              Anonymous Identity
+              エージェント識別名 (匿名ID)
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. Vortex-Lead-99"
+              placeholder="例: Vortex-Lead-99"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all placeholder:text-gray-600"
@@ -70,14 +70,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 group"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 group tracking-widest"
           >
-            {isPending ? <Loader2 className="animate-spin" size={20} /> : "AUTHORIZE ACCESS"}
+            {isPending ? <Loader2 className="animate-spin" size={20} /> : "アクセスを承認する"}
           </button>
         </form>
 
         <p className="text-center mt-8 text-xs text-gray-500 leading-relaxed px-4">
-          By accessing this system, you agree to the Ignitera Governance Protocols and the Neural-Privacy Act of 2026.
+          本システムにアクセスすることで、あなたはIgnitera統治プロトコルおよび2026年神経プライバシー法に同意したものとみなされます。
         </p>
       </div>
     </div>
