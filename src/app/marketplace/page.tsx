@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { getRankColor } from '@/lib/colors';
 
 export default function Marketplace() {
-  const [view, setView] = useState<'browse' | 'my-issued' | 'my-bids'>('browse');
+  const [view, setView] = useState<'browse' | 'my-issued' | 'my-bids' | 'my-performing'>('browse');
   const [tasks, setTasks] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -146,22 +146,29 @@ export default function Marketplace() {
       const bid = task?.bids?.find((b: any) => b.id === bidId);
       if (!task || !bid) return;
 
-      const diff = bid.amount - task.baseReward;
-      if (diff > 0) {
-        const totalBalance = (currentUser.balanceFlow || 0) + (currentUser.balanceStock || 0);
-        if (totalBalance < diff) {
-          alert(`予算が不足しているため、この入札を受け入れられません（残り ₲${totalBalance.toFixed(1)} です）。`);
-          return;
-        }
-      }
+      if (!confirm(`${bid.bidder.anonymousName} さんを採用し、ミッションを開始しますか？`)) return;
 
-      const res = await fetch(`/api/tasks/${taskId}/accept-bid`, {
-        method: 'POST',
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bidId }),
+        body: JSON.stringify({ 
+          assigneeId: bid.bidderId, 
+          status: 'IN_PROGRESS',
+          finalReward: bid.amount 
+        }),
       });
-      if (res.ok) fetchData();
-    } catch (err) { console.error(err); }
+
+      if (res.ok) {
+        fetchData();
+        alert('採用しました。ミッションフェーズに移行します。');
+      } else {
+        const err = await res.json();
+        alert(`採用エラー: ${err.error}`);
+      }
+    } catch (err: any) { 
+        console.error(err); 
+        alert(`システムエラー: ${err.message}`);
+    }
   };
 
   const handleCompleteTask = async (e: React.FormEvent) => {
@@ -216,9 +223,21 @@ export default function Marketplace() {
 
   const filteredTasks = tasks.filter((t: any) => {
     if (view === 'my-issued') return t.requesterId === currentUser.id;
-    if (view === 'my-bids') return t.bids?.some((b: any) => b.bidderId === currentUser.id);
-    // 案件を探す (browse) モードでは、募集中のもののみを表示し、完了済みや自分自身の発行分を除外
-    return t.requesterId !== currentUser.id && t.status !== 'COMPLETED';
+    
+    // 入札中 (Bidding): 自分が入札しており、かつまだ採用されていない（status=OPEN）案件
+    if (view === 'my-bids') {
+        const isBidder = t.bids?.some((b: any) => b.bidderId === currentUser.id);
+        return isBidder && t.status === 'OPEN';
+    }
+    
+    // 受注中 (Performing): 自分が担当者（assignee）として採用された進行中の案件
+    if (view === 'my-performing') {
+        return t.assigneeId === currentUser.id && t.status === 'IN_PROGRESS';
+    }
+    
+    // 案件を探す (browse): 自分でなく、かつ募集中かつ未入札の案件（入札済みは別タブで管理するため）
+    const isBidder = t.bids?.some((b: any) => b.bidderId === currentUser.id);
+    return t.requesterId !== currentUser.id && t.status === 'OPEN' && !isBidder;
   });
 
   const rankColor = getRankColor(currentUser.rank);
@@ -239,8 +258,9 @@ export default function Marketplace() {
 
           <nav style={{ display: 'flex', gap: '12px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '5px' }}>
              <button onClick={() => setView('browse')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'browse' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'browse' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>探す</button>
-             <button onClick={() => setView('my-issued')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-issued' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-issued' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>発行済</button>
+             <button onClick={() => setView('my-performing')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-performing' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-performing' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>受注中</button>
              <button onClick={() => setView('my-bids')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-bids' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-bids' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>入札中</button>
+             <button onClick={() => setView('my-issued')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-issued' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-issued' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>発行済</button>
           </nav>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -409,10 +429,12 @@ export default function Marketplace() {
       <main className={styles.mainScrollArea}>
         <header className={styles.topHeader} style={{ marginBottom: '48px' }}>
           <div>
-            <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-2px' }}>ミッション・<span style={{ color: rankColor }}>{view === 'browse' ? '探索' : view === 'my-issued' ? '管理' : 'ステータス'}</span></h1>
+            <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-2px' }}>ミッション・<span style={{ color: rankColor }}>{view === 'browse' ? '探索' : view === 'my-performing' ? '遂行中' : view === 'my-issued' ? '管理' : 'ステータス'}</span></h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '1rem', marginTop: '4px' }}>
-                 {view === 'browse' ? '分散型プロトコルから最適なミッションをスキャンし入札してください。' : '自らが発行したミッションの進捗と報酬支払いを管理します。'}
+                 {view === 'browse' ? '分散型プロトコルから最適なミッションをスキャンし入札してください。' : 
+                  view === 'my-performing' ? 'あなたが現在遂行中のミッションプロトコルです。' : 
+                  '自らが発行したミッションの進捗と報酬支払いを管理します。'}
                </p>
                <button onClick={toggleViewMode} style={{ background: 'none', border: `1px solid ${rankColor}40`, color: rankColor, padding: '4px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '900', cursor: 'pointer' }}>
                   SWITCH_TO_MOBILE
@@ -426,8 +448,9 @@ export default function Marketplace() {
 
         <nav style={{ display: 'flex', gap: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '40px' }}>
            <TabItem active={view === 'browse'} onClick={() => setView('browse')} text="案件をさがす" color={rankColor} />
-           <TabItem active={view === 'my-issued'} onClick={() => setView('my-issued')} text="発行した案件" color={rankColor} />
+           <TabItem active={view === 'my-performing'} onClick={() => setView('my-performing')} text="受注中の案件" color={rankColor} />
            <TabItem active={view === 'my-bids'} onClick={() => setView('my-bids')} text="入札中の案件" color={rankColor} />
+           <TabItem active={view === 'my-issued'} onClick={() => setView('my-issued')} text="発行した案件" color={rankColor} />
         </nav>
 
         <section>

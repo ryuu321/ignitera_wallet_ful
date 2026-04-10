@@ -7,6 +7,8 @@ export async function GET() {
       include: {
         requester: { select: { id: true, anonymousName: true, rank: true } },
         assignee: { select: { id: true, anonymousName: true, rank: true } },
+        bids: { include: { bidder: true } },
+        transaction: true,
       },
       orderBy: { createdAt: 'desc' },
     });

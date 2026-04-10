@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calculateAlgorithmS } from '@/lib/engine';
-import { getRankCorrection } from '@/lib/rank';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -9,11 +8,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     
     // Inputs for Algorithm S
-    const { 
-      actualHours, 
-      expenseAmount,
-      wu, wd, pc, q, ac, aa, df, sf, eb 
-    } = body;
+    const { actualHours, expenseAmount, rating } = body;
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
@@ -25,46 +20,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // 1. Calculate Reward Subtraction (Requester side)
-    // - totalPayment = task.baseReward
-    // - subtract from balanceFlow first
-    // - remainder from balanceStock
     const totalPayment = task.baseReward;
     const availableFlow = task.requester.balanceFlow;
     const availableStock = task.requester.balanceStock;
 
     if (availableFlow + availableStock < totalPayment) {
-       return NextResponse.json({ error: 'Requester has insufficient total balance at completion stage' }, { status: 400 });
+       return NextResponse.json({ error: 'Requester has insufficient total balance' }, { status: 400 });
     }
 
     const flowPayment = Math.min(availableFlow, totalPayment);
-    const stockPayment = totalPayment - flowPayment;
+    const stockPayment = Math.max(0, totalPayment - flowPayment);
 
-    // 2. Prepare Input for Algorithm S
-    const sInput = {
-      wu: wu ?? 1.0,
-      wd: wd ?? 1.0,
-      pc: pc ?? 1.0,
-      q: q ?? 1.0,
-      ac: ac ?? 1.0,
-      aa: aa ?? 1.0,
-      df: df ?? 1.0,
-      sf: sf ?? 1.0,
-      eb: eb ?? 1.0,
-      reward: task.baseReward,
-      hours: actualHours ?? 1,
+    // 2. Calculate Final Score (S) using the full statistical engine
+    const { finalScore, factors } = await calculateAlgorithmS({
+      taskId,
+      userId: task.assigneeId,
+      requesterId: task.requesterId,
+      actualHours: actualHours ?? 1,
       expenses: expenseAmount ?? 0,
-      rank: task.assignee.rank,
-    };
+      rating: rating ?? 3,
+    });
 
-    // 3. Calculate Final Score (S)
-    const finalScore = calculateAlgorithmS(sInput);
-
-    // 4. Update Database (Atomic Transaction)
-    // - S (Evaluation): Update Score
-    // - Market (C_flow / C_stock): Payment from requester
-    // - Assets (C_stock): Increment receiver assets
-    const [updatedUser, completedTask] = await prisma.$transaction([
-      // 4a. Assignee Data (Score and Assets)
+    // 3. Update Database (Atomic Transaction)
+    await prisma.$transaction([
+      // 3a. Assignee Data (Score and Assets)
       prisma.user.update({
         where: { id: task.assigneeId },
         data: {
@@ -73,7 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           totalScore: { increment: finalScore },
         }
       }),
-      // 4b. Requester Data (Multiple domain subtraction)
+      // 3b. Requester Data (Multiple domain subtraction)
       prisma.user.update({
         where: { id: task.requesterId },
         data: {
@@ -81,12 +60,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           balanceStock: { decrement: stockPayment },
         }
       }),
-      // 4c. Task Status Update
+      // 3c. Task Status Update
       prisma.task.update({
         where: { id: taskId },
-        data: { status: 'COMPLETED' }
+        data: { status: 'COMPLETED', finalReward: task.baseReward }
       }),
-      // 4d. Log the Transaction
+      // 3d. Log the Transaction (Recording all components for audit)
       prisma.transaction.create({
         data: {
           taskId,
@@ -94,12 +73,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           toUserId: task.assigneeId,
           amount: task.baseReward,
           finalScore: finalScore,
-          wu: sInput.wu, wd: sInput.wd, pc: sInput.pc, q: sInput.q,
-          ac: sInput.ac, aa: sInput.aa, df: sInput.df, sf: sInput.sf,
-          eb: sInput.eb,
-          rr: getRankCorrection(task.assignee.rank),
-          rawExpectedHours: task.expectedHours,
-          rawActualHours: sInput.hours,
+          wu: factors.Wu, 
+          wd: factors.Wd, 
+          pc: factors.Pc, 
+          q: factors.Q,
+          ac: factors.Ac, 
+          aa: factors.Aa, 
+          df: factors.Df, 
+          sf: factors.Sf,
+          eb: factors.Eb, 
+          rr: factors.Rr,
+          rawActualHours: actualHours,
         }
       })
     ]);
@@ -107,9 +91,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ 
       success: true, 
       finalScore, 
-      reward: task.baseReward,
-      flowUsed: flowPayment,
-      stockUsed: stockPayment
+      multipliers: factors,
+      payment: { flowUsed: flowPayment, stockUsed: stockPayment }
     });
 
   } catch (error: any) {

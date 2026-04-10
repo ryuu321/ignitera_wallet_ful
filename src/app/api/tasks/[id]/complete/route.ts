@@ -139,6 +139,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       }
     }
 
+    // --- 3. ATOMIC UPDATE & AUDIT (Balance Shift: FLOW -> STOCK) ---
+    const totalPtoPay = task.finalReward || task.baseReward;
+    let flowDeduct = Math.min(task.requester.balanceFlow, totalPtoPay);
+    let stockDeduct = Math.max(0, totalPtoPay - flowDeduct);
+
     await prisma.$transaction([
       prisma.transaction.create({
         data: {
@@ -173,9 +178,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         data: { status: 'COMPLETED' }
       }),
       prisma.user.update({
+        where: { id: task.requesterId },
+        data: {
+          balanceFlow: { decrement: flowDeduct },
+          balanceStock: { decrement: stockDeduct }
+        }
+      }),
+      prisma.user.update({
         where: { id: task.assigneeId },
         data: {
-          balanceStock: { increment: task.finalReward || task.baseReward },
+          balanceStock: { increment: totalPtoPay },
           totalScore: { increment: S },
           monthlyScore: { increment: S },
           skillLevel: newSkillLevel,
