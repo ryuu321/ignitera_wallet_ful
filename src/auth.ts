@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.AUTH_SECRET || "ignitera_emergency_secret_fallback_999",
   providers: [
     Credentials({
       name: "Ignitera Login",
