@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { ShieldCheck, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -75,6 +76,12 @@ export default function LoginPage() {
             {isPending ? <Loader2 className="animate-spin" size={20} /> : "アクセスを承認する"}
           </button>
         </form>
+
+        <div className="mt-8 pt-6 border-t border-white/5 text-center">
+          <Link href="/register" className="text-sm text-gray-500 hover:text-white transition-colors">
+            まだエージェントをお持ちでないですか？ <span className="text-indigo-400 font-bold ml-1">新規登録</span>
+          </Link>
+        </div>
 
         <p className="text-center mt-8 text-xs text-gray-500 leading-relaxed px-4">
           本システムにアクセスすることで、あなたはIgnitera統治プロトコルおよび2026年神経プライバシー法に同意したものとみなされます。
