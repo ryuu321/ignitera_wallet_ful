@@ -10,10 +10,16 @@ import {
   AlertCircle
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const session = await auth();
-  const userId = (session?.user as any).id;
+  
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const userId = (session.user as any).id;
 
   // DB Fetching (Parallel)
   const [user, recentTransactions, tasks] = await Promise.all([
