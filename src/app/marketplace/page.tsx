@@ -1,807 +1,141 @@
-"use client"
-
-import React, { useState, useEffect } from 'react';
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import Navigation from "@/components/Navigation";
 import { 
-  Plus, Search, Briefcase, Filter, ArrowLeft, Target, ShieldCheck, Zap, X, Send, History, Award, LayoutDashboard, User, BarChart3, Settings, Calculator, MessageSquare, Clock, MapPin, CheckCircle2, TrendingUp, AlertCircle, ChevronRight, Layers, Cpu, Brain, Rocket, Star, PlusCircle, ExternalLink, Activity, Timer
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import styles from '../page.module.css';
-import { clsx } from 'clsx';
-import Link from 'next/link';
-import { getRankColor } from '@/lib/colors';
+  Search, 
+  Filter, 
+  Zap, 
+  Clock, 
+  Target, 
+  ArrowRight,
+  Briefcase
+} from "lucide-react";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
-export default function Marketplace() {
-  const [view, setView] = useState<'browse' | 'my-issued' | 'my-bids' | 'my-performing'>('browse');
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
-  
-  const [showModal, setShowModal] = useState(false);
-  const [showBidModal, setShowBidModal] = useState<any>(null);
-  const [showReviewModal, setShowReviewModal] = useState<any>(null);
-  const [showMessageModal, setShowMessageModal] = useState<any>(null);
-  
-  const [masterSkills, setMasterSkills] = useState<any[]>([]);
-  const [newTask, setNewTask] = useState({
-    title: '', description: '', baseReward: '100', expectedValue: '2', expectedUnit: 'h', 
-    outputs: 1, branches: 0, skillCount: 1, externalCount: 0, requiredSkill: '1.0',
-    position: 'GENERAL', tags: [] as string[]
-  });
-  
-  const [newBid, setNewBid] = useState({ amount: '', message: '' });
-  const [qualityScore, setQualityScore] = useState('1.0');
-  const [actualHours, setActualHours] = useState('');
-  const [taskMessages, setTaskMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+export default async function MarketplacePage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
 
-  const fetchData = async () => {
-    try {
-      const [tRes, uRes, sRes] = await Promise.all([
-        fetch('/api/tasks'),
-        fetch('/api/users'),
-        fetch('/api/skills')
-      ]);
-      const tData = await tRes.json();
-      const uData = await uRes.json();
-      const sData = await sRes.json();
-      
-      setTasks(tData);
-      setUsers(uData);
-      setMasterSkills(sData);
-      
-      const savedId = localStorage.getItem('demo-user-id');
-      const user = savedId ? uData.find((u: any) => u.id === savedId) : uData[0];
-      setCurrentUser(user || uData[0]);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => {
-    const isMobile = window.innerWidth < 1024;
-    const savedMode = localStorage.getItem('display-mode') as 'desktop' | 'mobile';
-    setViewMode(savedMode || (isMobile ? 'mobile' : 'desktop'));
-    fetchData(); 
-  }, []);
-
-  const toggleViewMode = () => {
-    const next = viewMode === 'desktop' ? 'mobile' : 'desktop';
-    setViewMode(next);
-    localStorage.setItem('display-mode', next);
-  };
-
-  const handleUserChange = (id: string) => {
-    const user = users.find(u => u.id === id);
-    if (user) {
-      setCurrentUser(user);
-      localStorage.setItem('demo-user-id', id);
-    }
-  };
-
-  const handleCreateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    try {
-      const val = parseFloat(newTask.expectedValue) || 1;
-      const unitFactor = newTask.expectedUnit === 'd' ? 8 : newTask.expectedUnit === 'w' ? 40 : 1;
-      const hours = val * unitFactor;
-
-      const rewardNum = parseFloat(newTask.baseReward);
-      const totalBalance = (currentUser.balanceFlow || 0) + (currentUser.balanceStock || 0);
-      if (rewardNum > totalBalance) {
-        alert(`発行可能枠とストックの合計(₲${totalBalance.toFixed(1)})を超える報酬額は設定できません。`);
-        return;
-      }
-
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...newTask, 
-          expectedHours: hours,
-          requesterId: currentUser.id,
-          tags: newTask.tags 
-        }),
-      });
-      if (res.ok) {
-        setShowModal(false);
-        fetchData();
-        setNewTask({
-          title: '', description: '', baseReward: '100', expectedValue: '2', expectedUnit: 'h', 
-          outputs: 1, branches: 0, skillCount: 1, externalCount: 0, requiredSkill: '1.0',
-          position: 'GENERAL', tags: []
-        });
-      }
-    } catch (err) { console.error(err); }
-  };
-
-  const handlePlaceBid = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser || !showBidModal) return;
-    try {
-      const res = await fetch(`/api/tasks/${showBidModal.id}/bid`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newBid, bidderId: currentUser.id }),
-      });
-      if (res.ok) {
-        setShowBidModal(null);
-        setNewBid({ amount: '', message: '' });
-        fetchData();
-        alert('入札が完了しました。');
-      } else {
-        const err = await res.json();
-        alert(`入札エラー: ${err.error || '不明なエラー'}`);
-      }
-    } catch (err: any) { 
-      console.error(err); 
-      alert(`システムエラー: ${err.message}`);
-    }
-  };
-
-  const handleAcceptBid = async (taskId: string, bidId: string) => {
-    try {
-      const task = tasks.find(t => t.id === taskId);
-      const bid = task?.bids?.find((b: any) => b.id === bidId);
-      if (!task || !bid) return;
-
-      if (!confirm(`${bid.bidder.anonymousName} さんを採用し、ミッションを開始しますか？`)) return;
-
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          assigneeId: bid.bidderId, 
-          status: 'IN_PROGRESS',
-          finalReward: bid.amount 
-        }),
-      });
-
-      if (res.ok) {
-        fetchData();
-        alert('採用しました。ミッションフェーズに移行します。');
-      } else {
-        const err = await res.json();
-        alert(`採用エラー: ${err.error}`);
-      }
-    } catch (err: any) { 
-        console.error(err); 
-        alert(`システムエラー: ${err.message}`);
-    }
-  };
-
-  const handleCompleteTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showReviewModal) return;
-    try {
-      const res = await fetch(`/api/tasks/${showReviewModal.id}/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          qualityScore: parseFloat(qualityScore),
-          actualHours: actualHours ? parseFloat(actualHours) : null 
-        }),
-      });
-      if (res.ok) {
-        setShowReviewModal(null);
-        setActualHours('');
-        fetchData();
-      } else {
-        const errorData = await res.json();
-        alert(`エラー: ${errorData.error}`);
-      }
-    } catch (err: any) { 
-        console.error(err); 
-        alert(`通信エラー: ${err.message}`);
-    }
-  };
-
-  const fetchMessages = async (taskId: string) => {
-    const res = await fetch(`/api/tasks/${taskId}/messages`);
-    const data = await res.json();
-    setTaskMessages(data);
-  };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !showMessageModal) return;
-    try {
-      const res = await fetch(`/api/tasks/${showMessageModal.id}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, content: newMessage }),
-      });
-      if (res.ok) {
-        setNewMessage('');
-        fetchMessages(showMessageModal.id);
-      }
-    } catch (err) { console.error(err); }
-  };
-
-  if (loading || !currentUser) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050510', color: '#6366f1' }}>ニューラル・マーケット同期中...</div>;
-
-  const filteredTasks = tasks.filter((t: any) => {
-    if (view === 'my-issued') return t.requesterId === currentUser.id;
-    
-    // 入札中 (Bidding): 自分が入札しており、かつまだ採用されていない（status=OPEN）案件
-    if (view === 'my-bids') {
-        const isBidder = t.bids?.some((b: any) => b.bidderId === currentUser.id);
-        return isBidder && t.status === 'OPEN';
-    }
-    
-    // 受注中 (Performing): 自分が担当者（assignee）として採用された進行中の案件
-    if (view === 'my-performing') {
-        return t.assigneeId === currentUser.id && t.status === 'IN_PROGRESS';
-    }
-    
-    // 案件を探す (browse): 自分でなく、かつ募集中かつ未入札の案件（入札済みは別タブで管理するため）
-    const isBidder = t.bids?.some((b: any) => b.bidderId === currentUser.id);
-    return t.requesterId !== currentUser.id && t.status === 'OPEN' && !isBidder;
+  // 募集中のタスクを取得
+  const tasks = await prisma.task.findMany({
+    where: { status: "OPEN" },
+    include: { requester: true },
+    orderBy: { createdAt: "desc" }
   });
 
-  const rankColor = getRankColor(currentUser.rank);
-
-  // Mobile Lite Layout
-  if (viewMode === 'mobile') {
-    return (
-      <div style={{ background: '#05050e', minHeight: '100vh', color: 'white', padding: '20px 20px 100px 20px' }}>
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ background: rankColor, padding: '8px', borderRadius: '10px' }}><Zap size={18} color="white" /></div>
-                <h1 style={{ fontSize: '1.2rem', fontWeight: '950', letterSpacing: '-1.5px' }}>MARKETPLACE</h1>
-             </div>
-             <button onClick={toggleViewMode} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '900' }}>
-                GO_DESKTOP
-             </button>
-          </header>
-
-          <nav style={{ display: 'flex', gap: '12px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '5px' }}>
-             <button onClick={() => setView('browse')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'browse' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'browse' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>探す</button>
-             <button onClick={() => setView('my-performing')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-performing' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-performing' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>受注中</button>
-             <button onClick={() => setView('my-bids')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-bids' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-bids' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>入札中</button>
-             <button onClick={() => setView('my-issued')} style={{ whiteSpace: 'nowrap', padding: '10px 20px', borderRadius: '16px', background: view === 'my-issued' ? rankColor : 'rgba(255,255,255,0.03)', color: view === 'my-issued' ? 'black' : 'white', border: 'none', fontSize: '0.85rem', fontWeight: '900' }}>発行済</button>
-          </nav>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-             {filteredTasks.length === 0 && <div style={{ textAlign: 'center', padding: '60px', color: 'rgba(255,255,255,0.2)', fontSize: '0.9rem' }}>対象案件が見つかりません。</div>}
-             {filteredTasks.map((task) => (
-                <motion.div 
-                    key={task.id} 
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => { if(task.requesterId !== currentUser.id) setShowBidModal(task) }}
-                    className="glass-card" 
-                    style={{ padding: '24px', borderLeft: `6px solid ${task.status === 'OPEN' ? rankColor : '#6366f1'}`, borderRadius: '24px', position: 'relative' }}
-                >
-                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                      <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', fontWeight: '900', letterSpacing: '1px' }}>{task.position}</span>
-                      <div style={{ textAlign: 'right' }}>
-                         <span style={{ fontWeight: '950', color: rankColor, fontSize: '1.4rem' }}>₲{task.baseReward}</span>
-                      </div>
-                   </div>
-                   <h3 style={{ fontSize: '1.2rem', fontWeight: '900', marginBottom: '8px', letterSpacing: '-0.5px' }}>{task.title}</h3>
-                   <div style={{ display: 'flex', gap: '15px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {task.expectedHours}h</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Zap size={12} /> {task.bids?.length || 0} Bids</div>
-                   </div>
-                   
-                   {task.status === 'IN_PROGRESS' && task.requesterId === currentUser.id && (
-                       <button 
-                         onClick={(e) => { e.stopPropagation(); setShowReviewModal(task); }}
-                         style={{ width: '100%', marginTop: '20px', padding: '16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '16px', fontWeight: '950', fontSize: '0.9rem', boxShadow: '0 10px 20px rgba(16, 185, 129, 0.3)' }}>
-                         ミッション完了を承認
-                       </button>
-                   )}
-                </motion.div>
-             ))}
-          </div>
-
-          <button 
-            onClick={() => setShowModal(true)}
-            style={{ position: 'fixed', bottom: '110px', right: '30px', width: '70px', height: '70px', borderRadius: '35px', background: rankColor, border: 'none', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 15px 40px ${rankColor}60`, zIndex: 100 }}>
-             <Plus size={36} strokeWidth={3} />
-          </button>
-
-          {/* Bottom Nav */}
-          <nav style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', height: '75px', background: 'rgba(20,20,25,0.9)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '30px', display: 'flex', padding: '0 15px', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', zIndex: 1000 }}>
-             <button onClick={() => location.href='/'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <LayoutDashboard size={22} />
-                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>HOME</span>
-             </button>
-             <button onClick={() => location.href='/marketplace'} style={{ flex: 1, background: 'none', border: 'none', color: rankColor, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <Briefcase size={22} />
-                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>MARKET</span>
-             </button>
-             <button onClick={() => alert('支払いQR読取(未実装)')} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <Zap size={22} />
-                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>PAY</span>
-             </button>
-             <button onClick={() => location.href='/profile'} style={{ flex: 1, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <User size={22} />
-                <span style={{ fontSize: '0.65rem', fontWeight: '900' }}>DNA</span>
-             </button>
-          </nav>
-
-          <AnimatePresence>
-            {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} masterSkills={masterSkills} color={rankColor} refreshSkills={fetchData} /></div>}
-            {showBidModal && <div className="modal-overlay" onClick={() => setShowBidModal(null)}><div onClick={e => e.stopPropagation()}><BidModal task={showBidModal} onClose={() => setShowBidModal(null)} onSubmit={handlePlaceBid} newBid={newBid} setNewBid={setNewBid} color={rankColor} /></div></div>}
-            {showReviewModal && <div className="modal-overlay"><ReviewModal task={showReviewModal} onClose={() => setShowReviewModal(null)} onSubmit={handleCompleteTask} qualityScore={qualityScore} setQualityScore={setQualityScore} actualHours={actualHours} setActualHours={setActualHours} color={rankColor} /></div>}
-            {showMessageModal && <div className="modal-overlay"><MessageModal task={showMessageModal} messages={taskMessages} currentUser={currentUser} onClose={() => setShowMessageModal(null)} onSend={handleSendMessage} newMessage={newMessage} setNewMessage={setNewMessage} color={rankColor} /></div>}
-          </AnimatePresence>
-          <style jsx>{`
-            .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); backdrop-filter: blur(25px); z-index: 2000; display: flex; align-items: flex-end; justify-content: center; }
-            @media (max-width: 1024px) {
-               :global(.glass-card) { width: 95% !important; margin-bottom: 20px; }
-            }
-          `}</style>
-      </div>
-    );
-  }
-
-  // Desktop Layout
   return (
-    <div className={styles.dashboardContainer} style={{ background: '#050511', color: 'white', minHeight: '100vh', '--primary': rankColor } as any}>
-      <aside className={styles.sidebar}>
-         <Link href="/" className={styles.logoSection} style={{ textDecoration: 'none' }}>
-            <div className={styles.logoIcon} style={{ background: rankColor, boxShadow: `0 0 20px ${rankColor}30` }}><Zap size={14} color="white" /></div>
-            <span className={styles.logoText}>Ignitera <span style={{ color: rankColor }}>OS</span></span>
-         </Link>
-         
-         <nav className={styles.navMenu}>
-             <Link href="/" className={styles.navItem}><LayoutDashboard size={18} /> <span>概要</span></Link>
-             <Link href="/marketplace" className={clsx(styles.navItem, styles.navItemActive)}><Briefcase size={18} /> <span>マーケット</span></Link>
-             <Link href="/kpi" className={styles.navItem}><BarChart3 size={18} /> <span>アナリティクス</span></Link>
-             <Link href="/profile" className={styles.navItem}><User size={18} /> <span>プロフィール DNA</span></Link>
-             <Link href="/settings" className={styles.navItem}><Settings size={18} /> <span>設定</span></Link>
-             <Link href="/algorithm" className={styles.navItem} style={{ marginTop: '10px', opacity: 0.8 }}>
-                <Calculator size={18} color={rankColor} /> <span style={{ fontSize: '0.85rem' }}>アルゴリズム解説</span>
-             </Link>
-         </nav>
-
-         <div style={{ flex: 1 }} />
-         
-         <div style={{ padding: '20px', margin: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '15px', letterSpacing: '1px', fontWeight: '900' }}>NEURAL_WALLET</div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-               <BalanceItem label="FLOW" value={currentUser.balanceFlow} unit="₲" color={rankColor} description="今月の発行可能予算" />
-               <BalanceItem label="STOCK" value={currentUser.balanceStock} unit="₲" color="#10b981" description="生涯蓄積・業務投資資産" />
-               <BalanceItem label="IGN" value={currentUser.balanceIgn} unit="𝒾" color="#fbbf24" description="社内アメニティ・経費用" />
-            </div>
-
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-                <button 
-                    onClick={async () => {
-                        const amount = prompt('IGN に換金する Stock の額を入力してください (1:1 換金):', '10');
-                        if (amount && !isNaN(parseFloat(amount))) {
-                            const res = await fetch('/api/exchange/stock-to-ign', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ userId: currentUser.id, amount })
-                            });
-                            if (res.ok) { fetchData(); alert('IGN への換金が完了しました。'); }
-                            else { const err = await res.json(); alert(`エラー: ${err.error}`); }
-                        }
-                    }}
-                    style={{ flex: 1, padding: '10px', background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.3)', borderRadius: '10px', color: '#fbbf24', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                    IGN換金
-                </button>
-                <button 
-                    onClick={async () => {
-                        const amount = prompt('IGN を使用する額を入力してください:', '5');
-                        if (amount && !isNaN(parseFloat(amount))) {
-                            const desc = prompt('使用用途を入力してください (例: カフェラテ, 席料):', 'アメニティ利用');
-                            const res = await fetch('/api/expenses', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ userId: currentUser.id, amount, category: 'GENERAL', description: desc })
-                            });
-                            if (res.ok) { fetchData(); alert('IGN の支払いが完了しました。'); }
-                            else { const err = await res.json(); alert(`エラー: ${err.error}`); }
-                        }
-                    }}
-                    style={{ flex: 1, padding: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '10px', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                    IGN支払
-                </button>
-            </div>
-
-            <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginBottom: '5px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>デモ・オペレーター切替</div>
-            <select 
-              value={currentUser.id} 
-              onChange={(e) => handleUserChange(e.target.value)}
-              style={{ width: '100%', background: 'none', color: 'white', border: 'none', outline: 'none', fontSize: '0.8rem', fontWeight: '900', marginBottom: '15px' }}
-            >
-              {users.map(u => <option key={u.id} value={u.id} style={{ background: '#0a0a0f' }}>{u.anonymousName} (ランク-{u.rank})</option>)}
-            </select>
-            <button 
-                onClick={async () => {
-                    if (confirm('システム時間（月）を進めますか？発行残高のリセット等が行われます。')) {
-                        const res = await fetch('/api/simulate/next-month', { method: 'POST' });
-                        if (res.ok) { fetchData(); alert('翌月のシミュレーションが完了しました。'); }
-                    }
-                }}
-                style={{ width: '100%', padding: '10px', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: '8px', color: '#6366f1', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                <History size={12} style={{ marginRight: '6px' }} /> 月を進める (Simulation)
-             </button>
-         </div>
-      </aside>
-
-      <main className={styles.mainScrollArea}>
-        <header className={styles.topHeader} style={{ marginBottom: '48px' }}>
+    <div className="flex bg-[#050505] min-h-screen text-white">
+      <Navigation user={session.user} />
+      <main className="ml-64 flex-1 p-8 pb-24">
+        <header className="flex justify-between items-end mb-12">
           <div>
-            <h1 style={{ fontSize: '2.8rem', fontWeight: '950', letterSpacing: '-2px' }}>ミッション・<span style={{ color: rankColor }}>{view === 'browse' ? '探索' : view === 'my-performing' ? '遂行中' : view === 'my-issued' ? '管理' : 'ステータス'}</span></h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-               <p style={{ color: "rgba(255,255,255,0.4)", fontSize: '1rem', marginTop: '4px' }}>
-                 {view === 'browse' ? '分散型プロトコルから最適なミッションをスキャンし入札してください。' : 
-                  view === 'my-performing' ? 'あなたが現在遂行中のミッションプロトコルです。' : 
-                  '自らが発行したミッションの進捗と報酬支払いを管理します。'}
-               </p>
-               <button onClick={toggleViewMode} style={{ background: 'none', border: `1px solid ${rankColor}40`, color: rankColor, padding: '4px 12px', borderRadius: '20px', fontSize: '0.65rem', fontWeight: '900', cursor: 'pointer' }}>
-                  SWITCH_TO_MOBILE
-               </button>
-            </div>
+            <h1 className="text-4xl font-black tracking-tighter mb-2 italic">マーケットプレイス</h1>
+            <p className="text-gray-400 font-medium">あなたのスキルを必要とする未解決のミッション</p>
           </div>
-          <button className="neon-button" style={{ background: rankColor }} onClick={() => setShowModal(true)}>
-            <Plus size={18} /> <span>ミッションを新規発行</span>
-          </button>
+          <div className="flex gap-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+              <input 
+                type="text" 
+                placeholder="ミッションを検索..." 
+                className="bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all w-64"
+              />
+            </div>
+            <button className="bg-white/5 border border-white/10 p-3 rounded-2xl text-gray-400 hover:bg-white/10 transition-colors">
+              <Filter size={20} />
+            </button>
+          </div>
         </header>
 
-        <nav style={{ display: 'flex', gap: '40px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '40px' }}>
-           <TabItem active={view === 'browse'} onClick={() => setView('browse')} text="案件をさがす" color={rankColor} />
-           <TabItem active={view === 'my-performing'} onClick={() => setView('my-performing')} text="受注中の案件" color={rankColor} />
-           <TabItem active={view === 'my-bids'} onClick={() => setView('my-bids')} text="入札中の案件" color={rankColor} />
-           <TabItem active={view === 'my-issued'} onClick={() => setView('my-issued')} text="発行した案件" color={rankColor} />
-        </nav>
-
-        <section>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '32px' }}>
-            {filteredTasks.map((task) => (
-              <motion.div layout key={task.id} className="glass-card" style={{ padding: '32px', borderTop: `4px solid ${task.status === 'OPEN' ? rankColor : '#6366f1'}`, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                  <div className={styles.badge} style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.4)', borderRadius: '8px' }}>{task.position}</div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: '950', color: rankColor, fontSize: '1.6rem', lineHeight: 1 }}>{task.baseReward} ₲</div>
-                    <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>BASE_VALUE</div>
-                  </div>
-                </div>
-
-                <h3 style={{ fontSize: '1.4rem', fontWeight: '900', marginBottom: '12px', letterSpacing: '-0.5px' }}>{task.title}</h3>
-                <p style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '28px' }}>{task.description}</p>
-                
-                <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '20px', marginBottom: '24px', border: '1px solid rgba(255,255,255,0.02)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                        <MetricItem icon={<Clock size={14} />} label="推定納期" value={`${task.expectedHours} ${task.expectedUnit || 'h'}`} />
-                        <MetricItem icon={<Layers size={14} />} label="アウトプット数" value={task.outputs || 1} />
-                        <MetricItem icon={<Cpu size={14} />} label="分岐難易度" value={task.branches || 0} />
-                        <MetricItem icon={<Brain size={14} />} label="必要スキル習熟" value={`S-${task.requiredSkill || '1.0'}`} />
-                    </div>
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
-                        <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginBottom: '8px', letterSpacing: '1px' }}>REQUIRED_SKILLSETS</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            {(() => {
-                              try {
-                                const tags = typeof task.tags === 'string' ? JSON.parse(task.tags) : (task.tags || []);
-                                const finalTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
-                                return finalTags.map((tag: string) => (
-                                  <span key={tag} style={{ padding: '4px 10px', background: `${rankColor}15`, color: rankColor, borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold', border: `1px solid ${rankColor}30` }}>{tag}</span>
-                                ));
-                              } catch(e) { 
-                                return <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.7rem' }}>スキル設定なし</span>; 
-                              }
-                            })()}
-                        </div>
-                    </div>
-                </div>
-
-                <div style={{ marginTop: 'auto' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem' }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg, ${rankColor}, #000)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                        {task.requester?.anonymousName?.[0] || 'C'}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-4">
+            {tasks.length > 0 ? (
+              tasks.map(task => (
+                <div key={task.id} className="bg-white/5 border border-white/10 p-6 rounded-3xl hover:bg-white/[0.08] transition-all group border-l-4 border-l-indigo-500">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                         <span className="px-3 py-1 bg-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-indigo-500/30">
+                           {task.position || "GENERAL"}
+                         </span>
+                         <span className="text-xs text-gray-500 font-mono">ID: {task.id.substring(0,8)}</span>
                       </div>
-                      <span style={{ fontWeight: 'bold' }}>{task.requester?.anonymousName}</span>
+                      <h2 className="text-2xl font-bold mb-1">{task.title}</h2>
+                      <p className="text-gray-400 text-sm line-clamp-2 max-w-xl">{task.description}</p>
                     </div>
-                    {task.bids?.length > 0 && (
-                      <div style={{ fontSize: '0.8rem', fontWeight: '900', color: rankColor }}>
-                         {task.bids.length} 件の入札
+                    <div className="text-right">
+                      <div className="text-3xl font-black font-mono text-indigo-400">{task.baseReward} <span className="text-xs opacity-50">₲</span></div>
+                      <div className="text-xs text-gray-500 mt-1 uppercase tracking-tighter">潜在報酬額</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center gap-3">
+                      <Clock className="text-gray-500" size={16} />
+                      <div>
+                        <div className="text-[10px] text-gray-500 uppercase font-bold">推定時間</div>
+                        <div className="text-sm font-bold">{task.expectedHours}h</div>
                       </div>
-                    )}
-                  </div>
-
-                  {task.status !== 'COMPLETED' && task.bids?.length > 0 && (
-                    <div style={{ marginTop: '15px', padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                       <div>
-                          <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '1px' }}>AUCTION_LANDSCAPE</div>
-                          <div style={{ fontSize: '1rem', fontWeight: '900', marginTop: '2px' }}>
-                             BEST_BID: <span style={{ color: rankColor }}>₲{Math.min(...task.bids.map((b: any) => b.amount))}</span>
-                          </div>
-                       </div>
-                       <ChevronRight size={20} color="rgba(255,255,255,0.1)" />
                     </div>
-                  )}
-
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                     {(task.requesterId === currentUser?.id || task.assigneeId === currentUser?.id) && (
-                        <button className={styles.quickActionBtn} style={{ flex: 1 }} onClick={() => { setShowMessageModal(task); fetchMessages(task.id); }}>
-                          <MessageSquare size={16} /> <span>スレッド</span>
-                        </button>
-                     )}
-                     
-                     {view === 'browse' && task.requesterId !== currentUser?.id && (
-                        task.bids?.some((b: any) => b.bidderId === currentUser?.id) ? (
-                            <div style={{ flex: 1, padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 'bold' }}>
-                               <CheckCircle2 size={16} style={{ marginRight: '8px' }} /> 入札を確定済み
-                            </div>
-                        ) : (
-                            <button className="neon-button" style={{ flex: 1.5, background: rankColor }} onClick={() => setShowBidModal(task)}>
-                               <Zap size={16} /> <span>この案件に入札する</span>
-                            </button>
-                        )
-                     )}
-
-                     {view === 'my-issued' && task.status === 'IN_PROGRESS' && (
-                        <button className="neon-button" style={{ flex: 1, background: '#10b981' }} onClick={() => setShowReviewModal(task)}>
-                           <CheckCircle2 size={16} /> <span>完了を承認</span>
-                        </button>
-                     )}
+                    <div className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center gap-3">
+                      <Target className="text-gray-500" size={16} />
+                      <div>
+                        <div className="text-[10px] text-gray-500 uppercase font-bold">難易度係数</div>
+                        <div className="text-sm font-bold">x{task.requiredSkill?.toFixed(1) || "1.0"}</div>
+                      </div>
+                    </div>
+                    <div className="bg-black/20 p-3 rounded-2xl border border-white/5 flex items-center gap-3">
+                      <Zap className="text-gray-500" size={16} />
+                      <div>
+                        <div className="text-[10px] text-gray-500 uppercase font-bold">依頼者</div>
+                        <div className="text-sm font-bold truncate">{task.requester.anonymousName}</div>
+                      </div>
+                    </div>
                   </div>
 
-                  {view === 'my-issued' && task.status === 'BIDDING' && task.bids?.length > 0 && (
-                     <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {task.bids.map((bid: any) => {
-                           const bColor = getRankColor(bid.bidder.rank);
-                           return (
-                             <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} key={bid.id} className="glass-card" style={{ padding: '24px', borderLeft: `4px solid ${bColor}`, background: 'rgba(255,255,255,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: `${bColor}20`, border: `1px solid ${bColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', color: bColor, fontSize: '1.1rem' }}>{bid.bidder.rank}</div>
-                                      <div>
-                                         <div style={{ fontWeight: '900', fontSize: '1rem' }}>{bid.bidder.anonymousName}</div>
-                                         <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', display: 'flex', gap: '10px', marginTop: '2px' }}>
-                                            <span style={{ color: 'rgba(255,255,255,0.6)' }}>先月スコア: {bid.bidder.lastMonthScore?.toFixed(1)} S</span>
-                                            <span>M-Score: {bid.bidder.monthlyScore?.toFixed(0)}</span>
-                                            <span>Skill: {bid.bidder.skillLevel?.toFixed(1)}</span>
-                                         </div>
-                                      </div>
-                                   </div>
-                                   <div style={{ textAlign: 'right' }}>
-                                      <div style={{ fontWeight: '950', fontSize: '1.2rem', color: bColor }}>₲{bid.amount}</div>
-                                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)' }}>PROPOSED_UNIT</div>
-                                   </div>
-                                </div>
-                                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5', background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '10px', marginBottom: '4px' }}>{bid.message || 'ミッション実行プロトコル未記述'}</div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '16px' }}>
-                                   <div style={{ flex: 1 }}>
-                                      <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', marginBottom: '6px' }}>HOLDER_SKILLSETS</div>
-                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                         {(() => {
-                                           try {
-                                             const bSkills = JSON.parse(bid.bidder.skills || '[]');
-                                             return bSkills.slice(0, 3).map((s: any) => (
-                                               <span key={s.name} style={{ fontSize: '0.65rem', padding: '2px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', color: 'rgba(255,255,255,0.5)' }}>{s.name}</span>
-                                             ));
-                                           } catch(e) { return null; }
-                                         })()}
-                                      </div>
-                                   </div>
-                                   <button onClick={() => handleAcceptBid(task.id, bid.id)} style={{ background: bColor, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 24px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold' }}>採用する</button>
-                                 </div>
-                              </motion.div>
-                           );
-                        })}
-                     </div>
-                  )}
+                  <div className="flex gap-4">
+                    <button className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3 rounded-2xl text-center transition-all flex items-center justify-center gap-2">
+                      詳細を確認
+                    </button>
+                    <button 
+                      onClick={() => alert(`ミッション受注リクエスト(未実装)\nID: ${task.id}`)}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-2xl text-center shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 group"
+                    >
+                      受注に名乗りを上げる <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
+              ))
+            ) : (
+              <div className="bg-white/5 border border-white/10 border-dashed rounded-3xl p-20 text-center text-gray-500">
+                 <Briefcase className="mx-auto mb-4 opacity-20" size={64} />
+                 <p className="text-lg font-bold">現在、進行可能なミッションはありません。</p>
+                 <p className="text-sm mt-2 opacity-60">新しい案件の公示を待つか、自らミッションを作成してください。</p>
+              </div>
+            )}
           </div>
-        </section>
+
+          <aside className="space-y-8">
+            <div className="bg-indigo-600/10 border border-indigo-500/20 p-6 rounded-3xl">
+              <h3 className="font-bold text-lg mb-4 text-indigo-400">受注のヒント</h3>
+              <p className="text-sm text-indigo-200/70 leading-relaxed mb-4">
+                あなたのランク（{ (session.user as any).role === "MANAGER" ? "管理者" : "プレイヤー" }）に合ったミッションを選ぶことで、評価スコア $S$ の上昇効率が最大化されます。
+              </p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs py-2 border-b border-indigo-500/10">
+                  <span className="text-gray-400">現在のランク</span>
+                  <span className="font-bold text-white">{(session.user as any).rank || "Z"}</span>
+                </div>
+                <div className="flex justify-between text-xs py-2 border-b border-indigo-500/10">
+                  <span className="text-gray-400">平均収益</span>
+                  <span className="font-bold text-white">2,500 ₲ / 回</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
       </main>
-
-      <AnimatePresence>
-        {showModal && <div className="modal-overlay"><CreateModal onClose={() => setShowModal(false)} onSubmit={handleCreateTask} newTask={newTask} setNewTask={setNewTask} masterSkills={masterSkills} color={rankColor} refreshSkills={fetchData} /></div>}
-        {showBidModal && <div className="modal-overlay"><BidModal task={showBidModal} onClose={() => setShowBidModal(null)} onSubmit={handlePlaceBid} newBid={newBid} setNewBid={setNewBid} color={rankColor} /></div>}
-        {showReviewModal && <div className="modal-overlay"><ReviewModal task={showReviewModal} onClose={() => setShowReviewModal(null)} onSubmit={handleCompleteTask} qualityScore={qualityScore} setQualityScore={setQualityScore} actualHours={actualHours} setActualHours={setActualHours} color={rankColor} /></div>}
-        {showMessageModal && <div className="modal-overlay"><MessageModal task={showMessageModal} messages={taskMessages} currentUser={currentUser} onClose={() => setShowMessageModal(null)} onSend={handleSendMessage} newMessage={newMessage} setNewMessage={setNewMessage} color={rankColor} /></div>}
-      </AnimatePresence>
-
-      <style jsx>{`
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-      `}</style>
-    </div>
-  );
-}
-
-function BalanceItem({ label, value, unit, color, description }: any) {
-    return (
-        <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '12px', padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4px' }}>
-               <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', fontWeight: '900' }}>{label}</span>
-               <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
-                  <span style={{ fontSize: '0.65rem', color, fontWeight: 'bold' }}>{unit}</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: '950', color, lineHeight: 1 }}>{value?.toLocaleString() || '0'}</span>
-               </div>
-            </div>
-            <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)' }}>{description}</div>
-        </div>
-    );
-}
-
-function TabItem({ active, onClick, text, color }: any) {
-    return (
-        <button onClick={onClick} style={{ height: '50px', background: 'none', border: 'none', color: active ? 'white' : 'rgba(255,255,255,0.4)', fontSize: '1rem', fontWeight: '900', cursor: 'pointer', position: 'relative', transition: '0.3s' }}>
-            {text}
-            {active && <motion.div layoutId="market-tab" style={{ position: 'absolute', bottom: -1, left: 0, width: '100%', height: '3px', background: color, boxShadow: `0 0 10px ${color}` }} />}
-        </button>
-    );
-}
-
-function MetricItem({ icon, label, value }: any) {
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ padding: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }}>{icon}</div>
-            <div>
-                <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>{label}</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{value}</div>
-            </div>
-        </div>
-    );
-}
-
-function CreateModal({ onClose, onSubmit, newTask, setNewTask, masterSkills, color, refreshSkills }: any) {
-  const [newTagInput, setNewTagInput] = useState('');
-  const toggleSkill = (name: string) => {
-    const next = newTask.tags.includes(name) ? newTask.tags.filter((t: string) => t !== name) : [...newTask.tags, name];
-    setNewTask({...newTask, tags: next});
-  };
-  const handleAddNewTag = async () => {
-    if (!newTagInput.trim()) return;
-    try {
-      const res = await fetch('/api/skills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newTagInput.trim(), category: 'GENERAL' })
-      });
-      if (res.ok) {
-        setNewTask({...newTask, tags: [...newTask.tags, newTagInput.trim()]});
-        setNewTagInput('');
-        refreshSkills();
-      }
-    } catch(e) { console.error(e); }
-  };
-  return (
-    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="glass-card" style={{ width: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '48px', border: `1px solid ${color}30` }}>
-      <h2 style={{ fontSize: '2.2rem', fontWeight: '950', marginBottom: '32px', letterSpacing: '-1.5px' }}>ミッションを<span style={{ color }}>発行する</span></h2>
-      <form onSubmit={onSubmit}>
-        <FormField label="任務タイトル (プロトコル名)" value={newTask.title} onChange={(v:any) => setNewTask({...newTask, title: v})} />
-        <FormField label="詳細プロトコル (要件定義)" value={newTask.description} onChange={(v:any) => setNewTask({...newTask, description: v})} type="textarea" />
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '32px' }}>
-            <div style={{ flex: 1 }}><FormField label="基準報酬 (₲)" value={newTask.baseReward} onChange={(v:any) => setNewTask({...newTask, baseReward: v})} type="number" /></div>
-            <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '10px', fontWeight: '900' }}>推定納期</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <input type="number" value={newTask.expectedValue} onChange={(e) => setNewTask({...newTask, expectedValue: e.target.value})} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '14px', borderRadius: '10px' }} />
-                    <select value={newTask.expectedUnit} onChange={(e) => setNewTask({...newTask, expectedUnit: e.target.value})} style={{ width: '100px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '14px', borderRadius: '10px' }}>
-                        <option value="h">時間</option><option value="d">日間</option><option value="w">週間</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '28px', borderRadius: '20px', border: `1px solid ${color}20`, marginBottom: '32px' }}>
-          <h4 style={{ fontSize: '0.8rem', color, marginBottom: '20px', fontWeight: '900' }}>複雑性マトリクス (D-FACTOR)</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <FormField label="アウトプット数" value={newTask.outputs} onChange={(v:any) => setNewTask({...newTask, outputs: v})} type="number" />
-            <FormField label="分岐難易度" value={newTask.branches} onChange={(v:any) => setNewTask({...newTask, branches: v})} type="number" />
-            <FormField label="要求スキル習熟" value={newTask.requiredSkill} onChange={(v:any) => setNewTask({...newTask, requiredSkill: v})} type="number" />
-            <FormField label="必要最少スキル数" value={newTask.skillCount} onChange={(v:any) => setNewTask({...newTask, skillCount: v})} type="number" />
-          </div>
-        </div>
-        <div style={{ marginBottom: '32px' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginBottom: '12px', fontWeight: '900' }}>必要スキル</label>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                <input value={newTagInput} onChange={(e) => setNewTagInput(e.target.value)} placeholder="新しいスキルを追加..." style={{ flex: 1, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px 15px', color: 'white' }} />
-                <button type="button" onClick={handleAddNewTag} style={{ padding: '0 15px', background: `${color}20`, border: `1px solid ${color}30`, color, borderRadius: '10px' }}><PlusCircle size={18} /></button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', padding: '12px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-                {masterSkills.map((s: any) => (<button key={s.id} type="button" onClick={() => toggleSkill(s.name)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', border: '1px solid', borderColor: newTask.tags.includes(s.name) ? color : 'rgba(255,255,255,0.1)', background: newTask.tags.includes(s.name) ? `${color}20` : 'transparent', color: newTask.tags.includes(s.name) ? 'white' : 'rgba(255,255,255,0.4)' }}>{s.name}</button>))}
-            </div>
-        </div>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '14px' }}>破棄</button>
-          <button type="submit" className="neon-button" style={{ flex: 2, background: color, justifyContent: 'center', height: '54px' }}><Rocket size={18} /> <span>プロトコルを放送する</span></button>
-        </div>
-      </form>
-    </motion.div>
-  );
-}
-
-function BidModal({ task, onClose, onSubmit, newBid, setNewBid, color }: any) {
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '500px', padding: '48px', border: `1px solid ${color}30` }}>
-      <h3 style={{ fontSize: '1.8rem', fontWeight: '950', marginBottom: '8px' }}>ミッションへの入札</h3>
-      <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)', marginBottom: '32px' }}>基準報酬額: <span style={{ color, fontWeight: 'bold' }}>₲{task.baseReward}</span></p>
-      <form onSubmit={onSubmit}>
-        <FormField label="提示単価 (₲)" value={newBid.amount} onChange={(v:any) => setNewBid({...newBid, amount: v})} type="number" />
-        <FormField label="提案事項" value={newBid.message} onChange={(v:any) => setNewBid({...newBid, message: v})} type="textarea" />
-        <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
-          <button type="button" onClick={onClose} style={{ flex: 1, background: 'none', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '14px' }}>キャンセル</button>
-          <button type="submit" className="neon-button" style={{ flex: 2, background: color, justifyContent: 'center' }}><Send size={18} /> <span>入札プロトコルを送信</span></button>
-        </div>
-      </form>
-    </motion.div>
-  );
-}
-
-function ReviewModal({ task, onClose, onSubmit, qualityScore, setQualityScore, actualHours, setActualHours, color }: any) {
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '480px', padding: '48px', border: `1px solid ${color}30` }}>
-      <h3 style={{ fontSize: '1.5rem', fontWeight: '950', marginBottom: '12px' }}>最終品質レビュー</h3>
-      <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', marginBottom: '32px' }}>担当者: {task.assignee?.anonymousName}</p>
-      
-      <form onSubmit={onSubmit}>
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <label style={{ fontSize: '0.85rem', color: 'white', fontWeight: '900' }}>クオリティ係数 (Q)</label>
-            <span style={{ color, fontWeight: 'bold' }}>x{qualityScore}</span>
-          </div>
-          <input type="range" min="0.1" max="1.5" step="0.1" value={qualityScore} onChange={(e) => setQualityScore(e.target.value)} style={{ width: '100%', accentColor: color }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px' }}>
-             <span>要求未達</span><span>標準スコア</span><span>期待過達</span>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: '32px' }}>
-           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', marginBottom: '10px' }}>
-              <Timer size={14} /> <span>実働時間 (Eb係数に影響)</span>
-           </label>
-           <input 
-             type="number" step="0.1" 
-             value={actualHours} onChange={(e) => setActualHours(e.target.value)} 
-             placeholder={`推定 ${task.expectedHours}h に対して...`}
-             style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white', outline: 'none' }} 
-           />
-           <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', marginTop: '8px' }}>未入力の場合は、採用から現在までの時間が自動計算されます。</p>
-        </div>
-
-        <button type="submit" className="neon-button" style={{ width: '100%', background: '#10b981', justifyContent: 'center', height: '54px' }}>
-           <CheckCircle2 size={18} /> <span>承認して報酬をアンロック</span>
-        </button>
-      </form>
-    </motion.div>
-  );
-}
-
-function MessageModal({ task, messages, currentUser, onClose, onSend, newMessage, setNewMessage, color }: any) {
-  return (
-    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ width: '650px', height: '85vh', padding: '48px', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
-         <h3 style={{ fontSize: '1.4rem', fontWeight: '950' }}>セキュア・スレッド</h3>
-         <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)' }}><X /></button>
-      </div>
-      <div style={{ flex: 1, overflowY: 'auto', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-         {messages.map((m:any) => (
-           <div key={m.id} style={{ alignSelf: m.userId === currentUser.id ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-              <div style={{ padding: '16px 20px', background: m.userId === currentUser.id ? color : 'rgba(255,255,255,0.05)', borderRadius: '18px', color: 'white' }}>{m.content}</div>
-           </div>
-         ))}
-      </div>
-      <form onSubmit={onSend} style={{ display: 'flex', gap: '12px' }}>
-         <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="メッセージを送信..." style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: 'none', borderRadius: '16px', padding: '18px', color: 'white' }} />
-         <button type="submit" className="neon-button" style={{ width: '60px', height: '60px', background: color, justifyContent: 'center' }}><Send size={22} /></button>
-      </form>
-    </motion.div>
-  );
-}
-
-function FormField({ label, value, onChange, type = 'text', placeholder = '' }: any) {
-  return (
-    <div style={{ marginBottom: '24px' }}>
-      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '900', color: 'rgba(255,255,255,0.4)', marginBottom: '10px' }}>{label}</label>
-      {type === 'textarea' ? (
-        <textarea value={value} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white', minHeight: '100px' }} />
-      ) : (
-        <input type={type} value={value} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '16px', color: 'white' }} />
-      )}
     </div>
   );
 }
