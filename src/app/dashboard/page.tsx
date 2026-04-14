@@ -21,6 +21,12 @@ export default async function DashboardPage() {
   }
 
   const userId = (session.user as any).id;
+  const username = (session.user as any).name;
+
+  // Vortex特権: 旧UI（Legacy Mode）へ自動遷移
+  if (username === "Vortex") {
+    redirect("/admin/legacy");
+  }
 
   // DB Fetching (Parallel)
   const [user, recentTransactions, tasks] = await Promise.all([
