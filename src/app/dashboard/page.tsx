@@ -23,9 +23,9 @@ export default async function DashboardPage() {
   const userId = (session.user as any).id;
   const username = (session.user as any).name;
 
-  // Vortex特権: 旧UI（Legacy Mode）へ自動遷移
+  // Vortex特権: 完全再現された初期Sandbox（サンドボックス）へ自動遷移
   if (username === "Vortex") {
-    redirect("/admin/legacy");
+    redirect("/admin/sandbox");
   }
 
   // DB Fetching (Parallel)

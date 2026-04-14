@@ -51,9 +51,12 @@ export default async function AdminPage() {
             </p>
           </div>
           <div className="flex gap-4 items-center">
-            <Link href="/admin/legacy" className="px-4 py-2 bg-indigo-500/10 border border-indigo-500/30 rounded text-indigo-400 text-xs font-bold hover:bg-indigo-500 hover:text-white transition-all uppercase tracking-widest">
-              Legacy Mode 起動
-            </Link>
+          <Link href="/admin/sandbox" className="px-4 py-2 bg-amber-500/10 border border-amber-500/30 rounded text-amber-500 text-xs font-bold hover:bg-amber-500 hover:text-black transition-all uppercase tracking-widest">
+            Sandbox Protocol 起動
+          </Link>
+          <Link href="/admin/legacy" className="px-4 py-2 bg-indigo-500/10 border border-indigo-500/30 rounded text-indigo-400 text-xs font-bold hover:bg-indigo-500 hover:text-white transition-all uppercase tracking-widest">
+            Legacy Mode 起動
+          </Link>
             <div className="px-4 py-2 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs font-bold tracking-widest uppercase animate-pulse">
               管理者モード
             </div>
