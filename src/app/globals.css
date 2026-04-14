@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --background: #050511;
   --sidebar: rgba(10, 10, 20, 0.4);
@@ -12,17 +14,17 @@
   --primary-glow: rgba(99, 102, 241, 0.5);
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
+@theme {
+  --color-brand: var(--primary);
+  --color-vanguard: var(--secondary);
 }
 
 body {
   background-color: var(--background);
   color: white;
-  overflow-x: hidden;
+  font-family: 'Outfit', sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 .glass-card {
@@ -45,57 +47,15 @@ body {
   font-weight: 900;
 }
 
-.neon-button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
-.neon-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
-  filter: brightness(1.1);
-}
-
-.tab-nav {
-  display: flex;
-  gap: 30px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  margin-bottom: 30px;
-}
-
-.tab-item {
-  padding: 12px 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  cursor: pointer;
-  position: relative;
-}
-
-.tab-item-active {
-  color: white !important;
-}
-
-.tab-item-active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: var(--primary);
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
 ::-webkit-scrollbar {
@@ -113,14 +73,4 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 3s infinite ease-in-out;
-}
-
-@keyframes pulse-subtle {
-  0% { opacity: 0.3; }
-  50% { opacity: 0.6; }
-  100% { opacity: 0.3; }
 }
